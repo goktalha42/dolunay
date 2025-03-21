@@ -75,16 +75,16 @@ export default function Home() {
                   className="rounded-full"
                 />
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4">Kaliteli Cihazlar</h3>
-              <p className="text-gray-600 text-center">En son teknolojiye sahip Vista işitme cihazları ile hizmetinizdeyiz.</p>
+              <h3 className="text-xl font-bold text-center mb-4 text-gray-800">Kaliteli Cihazlar</h3>
+              <p className="text-gray-700 text-center">En son teknolojiye sahip Vista işitme cihazları ile hizmetinizdeyiz.</p>
             </div>
             
             <div className="bg-gray-50 rounded-xl p-8 shadow-lg transform hover:-translate-y-2 transition-transform duration-300">
               <div className="relative w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mb-6 mx-auto overflow-hidden">
                 <FaBluetooth className="text-3xl text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4">Bluetooth Bağlantı</h3>
-              <p className="text-gray-600 text-center">İşitme cihazlarınızı telefonunuza bağlayarak daha pratik bir kullanım elde edin.</p>
+              <h3 className="text-xl font-bold text-center mb-4 text-gray-800">Bluetooth Bağlantı</h3>
+              <p className="text-gray-700 text-center">İşitme cihazlarınızı telefonunuza bağlayarak daha pratik bir kullanım elde edin.</p>
             </div>
             
             <div className="bg-gray-50 rounded-xl p-8 shadow-lg transform hover:-translate-y-2 transition-transform duration-300">
@@ -97,8 +97,8 @@ export default function Home() {
                   className="rounded-full"
                 />
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4">Müşteri Memnuniyeti</h3>
-              <p className="text-gray-600 text-center">Yüzlerce mutlu müşterimizle işitme sağlığınızı önemsiyoruz.</p>
+              <h3 className="text-xl font-bold text-center mb-4 text-gray-800">Müşteri Memnuniyeti</h3>
+              <p className="text-gray-700 text-center">Yüzlerce mutlu müşterimizle işitme sağlığınızı önemsiyoruz.</p>
             </div>
           </div>
         </div>
@@ -107,7 +107,7 @@ export default function Home() {
       {/* Hizmetlerimiz */}
       <section className="py-20 bg-gray-100">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">Hizmetlerimiz</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-gray-800">Hizmetlerimiz</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-16">
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -120,8 +120,8 @@ export default function Home() {
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-2xl font-bold mb-2">İşitme Testleri</h3>
-                <p className="text-gray-600 mb-4">Uzman odyometristlerimiz tarafından gerçekleştirilen kapsamlı işitme testleri ile işitme kaybınızın derecesini ve tipini belirliyor, size en uygun çözümü sunuyoruz.</p>
+                <h3 className="text-2xl font-bold mb-2 text-gray-800">İşitme Testleri</h3>
+                <p className="text-gray-700 mb-4">Uzman odyometristlerimiz tarafından gerçekleştirilen kapsamlı işitme testleri ile işitme kaybınızın derecesini ve tipini belirliyor, size en uygun çözümü sunuyoruz.</p>
                 <Link href="/iletisim" className="inline-block px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
                   Randevu Alın
                 </Link>
@@ -138,8 +138,8 @@ export default function Home() {
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-2xl font-bold mb-2">İşitme Cihazı Bakımı</h3>
-                <p className="text-gray-600 mb-4">İşitme cihazınızın uzun ömürlü olması ve en iyi performansı göstermesi için düzenli bakım ve ayarlama hizmetleri sunuyoruz.</p>
+                <h3 className="text-2xl font-bold mb-2 text-gray-800">İşitme Cihazı Bakımı</h3>
+                <p className="text-gray-700 mb-4">İşitme cihazınızın uzun ömürlü olması ve en iyi performansı göstermesi için düzenli bakım ve ayarlama hizmetleri sunuyoruz.</p>
                 <Link href="/iletisim" className="inline-block px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
                   Detaylı Bilgi
                 </Link>
@@ -148,7 +148,7 @@ export default function Home() {
           </div>
           
           <div className="text-center mt-12">
-            <p className="text-gray-600 mb-8 max-w-3xl mx-auto">Daha fazla bilgi almak ve işitme sağlığınızla ilgili profesyonel destek için bizimle iletişime geçin.</p>
+            <p className="text-gray-700 mb-8 max-w-3xl mx-auto">Daha fazla bilgi almak ve işitme sağlığınızla ilgili profesyonel destek için bizimle iletişime geçin.</p>
             <Link href="/urunlerimiz" className="inline-block px-8 py-3 bg-gray-800 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors">
               Ürünlerimizi Keşfedin
             </Link>

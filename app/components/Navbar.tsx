@@ -23,7 +23,7 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? "bg-white shadow-md" : "bg-gray-900/70"}`}>
+    <header className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? "bg-white shadow-md" : "bg-black/80"}`}>
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center">
@@ -34,6 +34,7 @@ export default function Navbar() {
                 fill
                 style={{ objectFit: 'contain' }}
                 priority
+                className={isScrolled ? "" : "filter brightness-0 invert"}
               />
             </div>
           </Link>
@@ -42,19 +43,19 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center space-x-6">
             <Link 
               href="/" 
-              className={`font-medium hover:text-gray-600 transition-colors ${isScrolled ? "text-gray-800" : "text-white"}`}
+              className={`font-medium hover:text-gray-300 transition-colors ${isScrolled ? "text-gray-800" : "text-white"}`}
             >
               Ana Sayfa
             </Link>
             <Link 
               href="/hakkimizda" 
-              className={`font-medium hover:text-gray-600 transition-colors ${isScrolled ? "text-gray-800" : "text-white"}`}
+              className={`font-medium hover:text-gray-300 transition-colors ${isScrolled ? "text-gray-800" : "text-white"}`}
             >
               Hakkımızda
             </Link>
             <Link 
               href="/urunlerimiz" 
-              className={`font-medium hover:text-gray-600 transition-colors ${isScrolled ? "text-gray-800" : "text-white"}`}
+              className={`font-medium hover:text-gray-300 transition-colors ${isScrolled ? "text-gray-800" : "text-white"}`}
             >
               Ürünlerimiz
             </Link>
@@ -75,9 +76,9 @@ export default function Navbar() {
             aria-label="Menüyü Aç/Kapat"
           >
             {isOpen ? (
-              <FaTimes className={isScrolled ? "text-gray-800" : "text-white"} />
+              <FaTimes className="text-white" />
             ) : (
-              <FaBars className={isScrolled ? "text-gray-800" : "text-white"} />
+              <FaBars className="text-white" />
             )}
           </button>
         </div>

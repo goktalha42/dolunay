@@ -4,9 +4,9 @@ import { FaUserMd, FaCertificate, FaHandshake, FaClock, FaHeadphones, FaTrophy, 
 
 export default function Hakkimizda() {
   return (
-    <main className="min-h-screen pt-16">
+    <main className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gray-900 text-white py-24 md:py-32">
+      <section className="relative bg-gray-900 text-white py-24 md:py-32 mt-16">
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/Ekran görüntüsü 2025-01-15 090157.jpg"

@@ -4,9 +4,9 @@ import { FaBluetooth, FaCheckCircle, FaBatteryFull, FaWater } from "react-icons/
 
 export default function Urunlerimiz() {
   return (
-    <main className="min-h-screen pt-16">
+    <main className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gray-900 text-white py-24 md:py-32">
+      <section className="relative bg-gray-900 text-white py-24 md:py-32 mt-16">
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/birinci.jpg"
@@ -37,7 +37,7 @@ export default function Urunlerimiz() {
               <div className="relative h-72 w-full bg-white flex items-center justify-center p-4">
                 <div className="relative h-64 w-64">
                   <Image
-                    src="/images/UN_Packshot_B-312_Left_Left_Receiver_P6_Platinum_Actual_Size_CMYK_050-6401-P644_01.tif"
+                    src="/images/UN_Packshot_B-312_Right_Right_Receiver_P7_Pewter_Actual_Size_RGB_050-6401-P744_01.png"
                     alt="Vista Premium Serisi"
                     fill
                     style={{ objectFit: 'contain' }}
@@ -74,7 +74,7 @@ export default function Urunlerimiz() {
               <div className="relative h-72 w-full bg-white flex items-center justify-center p-4">
                 <div className="relative h-64 w-64">
                   <Image
-                    src="/images/UN_Packshot_B-312_Left_Left_Receiver_P4_Espresso_Actual_Size_CMYK_050-6401-P444_01.tif"
+                    src="/images/UN_Packshot_B-312_Right_Right_Receiver_P7_Pewter_Actual_Size_RGB_050-6401-P744_01.png"
                     alt="Vista Comfort Serisi"
                     fill
                     style={{ objectFit: 'contain' }}
