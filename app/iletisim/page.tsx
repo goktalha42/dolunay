@@ -1,5 +1,12 @@
 import Image from "next/image";
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock } from "react-icons/fa";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "İletişim | Dolunay İşitme Cihazları Merkezi | Keçiören",
+  description: "Ankara Keçiören'de bulunan Dolunay İşitme Cihazları Merkezi ile iletişime geçin. Ücretsiz işitme testi randevusu alın. Adres: Aşağı Eğlence, Beste Sk. 16/C, 06010 Keçiören/Ankara",
+  keywords: ["Dolunay işitme iletişim", "Keçiören işitme merkezi", "ücretsiz işitme testi", "Ankara işitme cihazı randevu"],
+};
 
 export default function Iletisim() {
   return (

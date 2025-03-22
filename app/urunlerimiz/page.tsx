@@ -1,6 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaBluetooth, FaCheckCircle, FaBatteryFull, FaWater } from "react-icons/fa";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Ürünlerimiz | Vista İşitme Cihazları | Dolunay İşitme",
+  description: "Vista işitme cihazları ürün serisi. Bluetooth bağlantılı, şarj edilebilir ve su geçirmez işitme cihazları. Premium ve Comfort serisi işitme cihazlarını keşfedin.",
+  keywords: ["Vista işitme cihazları", "bluetooth işitme cihazı", "şarj edilebilir işitme cihazı", "su geçirmez işitme cihazı", "Ankara işitme cihazı satışı"],
+};
 
 export default function Urunlerimiz() {
   return (

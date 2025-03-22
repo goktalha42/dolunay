@@ -1,6 +1,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { FaUserMd, FaCertificate, FaHandshake, FaClock, FaHeadphones, FaTrophy, FaCog } from 'react-icons/fa';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Hakkımızda | Dolunay İşitme Cihazları Merkezi",
+  description: "Dolunay İşitme Cihazları Merkezi'nin 10 yılı aşkın deneyimi ve uzman ekibi ile işitme sorunlarınıza kaliteli çözümler. Vista işitme cihazları yetkili satıcısı.",
+  keywords: ["Dolunay işitme", "işitme merkezi hakkında", "Vista işitme cihazları", "Ankara işitme merkezi"],
+};
 
 export default function Hakkimizda() {
   return (
@@ -45,7 +52,7 @@ export default function Hakkimizda() {
             </div>
             <div className="relative h-96 w-full rounded-xl overflow-hidden shadow-lg">
               <Image 
-                src="/images/Resim6.jpg" 
+                src="/images/Ekran görüntüsü 2025-01-16 083611.jpg" 
                 alt="İşitme Testi"
                 fill
                 style={{ objectFit: 'cover' }}
@@ -107,7 +114,7 @@ export default function Hakkimizda() {
                 </p>
                 <div className="relative h-48 w-full rounded-lg overflow-hidden">
                   <Image 
-                    src="/images/Ekran görüntüsü 2025-01-16 083611.jpg"
+                    src="/images/birinci.jpg"
                     alt="Vista İşitme Cihazları"
                     fill
                     style={{ objectFit: 'cover' }}

@@ -1,6 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaBluetooth, FaCheckCircle } from "react-icons/fa";
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: "Dolunay İşitme Cihazları Merkezi | Vista İşitme Cihazları | Keçiören Ankara",
+  description: "Ankara Keçiören'de işitme cihazı merkezi. Vista işitme cihazları yetkili satıcısı. Ücretsiz işitme testi, işitme cihazı bakımı ve danışmanlık hizmetleri.",
+  keywords: ["işitme cihazı merkezi", "Ankara işitme cihazı", "Vista işitme cihazları", "ücretsiz işitme testi", "Keçiören işitme merkezi"],
+};
 
 export default function Home() {
   return (
@@ -9,7 +16,7 @@ export default function Home() {
       <section className="relative bg-gray-900 text-white">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/images/Resim2.jpg"
+            src="/images/birinci.jpg"
             alt="İşitme Cihazları Arka Plan"
             fill
             style={{ objectFit: 'cover', opacity: 0.2 }}
@@ -44,7 +51,7 @@ export default function Home() {
             <div className="md:w-1/2 flex justify-center">
               <div className="relative w-80 h-80">
                 <Image
-                  src="/images/Resim1.jpg"
+                  src="/images/Ekran görüntüsü 2025-01-15 090157.jpg"
                   alt="İşitme Testi"
                   fill
                   style={{ objectFit: 'cover' }}
@@ -113,7 +120,7 @@ export default function Home() {
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="relative h-72 w-full">
                 <Image
-                  src="/images/Resim6.jpg"
+                  src="/images/Ekran görüntüsü 2025-01-16 083611.jpg"
                   alt="İşitme Testleri"
                   fill
                   style={{ objectFit: 'cover' }}
@@ -131,7 +138,7 @@ export default function Home() {
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="relative h-72 w-full">
                 <Image
-                  src="/images/Resim7.jpg"
+                  src="/images/Ekran görüntüsü 2025-01-15 090115.jpg"
                   alt="İşitme Cihazı Bakımı"
                   fill
                   style={{ objectFit: 'cover' }}
