@@ -1,11 +1,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { FaUserMd, FaCertificate, FaHandshake, FaClock, FaHeadphones, FaTrophy, FaCog } from 'react-icons/fa';
+import { FaUserMd, FaCog } from 'react-icons/fa';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: "Hakkımızda | Dolunay İşitme Cihazları Merkezi",
-  description: "Dolunay İşitme Cihazları Merkezi'nin 10 yılı aşkın deneyimi ve uzman ekibi ile işitme sorunlarınıza kaliteli çözümler. Vista işitme cihazları yetkili satıcısı.",
+  description: "Dolunay İşitme Cihazları Merkezi&apos;nin 10 yılı aşkın deneyimi ve uzman ekibi ile işitme sorunlarınıza kaliteli çözümler. Vista işitme cihazları yetkili satıcısı.",
   keywords: ["Dolunay işitme", "işitme merkezi hakkında", "Vista işitme cihazları", "Ankara işitme merkezi"],
 };
 
@@ -28,7 +28,7 @@ export default function Hakkimizda() {
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl font-bold mb-6 drop-shadow-lg">Hakkımızda</h1>
             <p className="text-xl text-white drop-shadow-lg">
-              Dolunay İşitme Cihazları Merkezi olarak, Ankara'nın Keçiören ilçesinde 10 yılı aşkın süredir
+              Dolunay İşitme Cihazları Merkezi olarak, Ankara&apos;nın Keçiören ilçesinde 10 yılı aşkın süredir
               işitme kaybı yaşayan bireylere kaliteli hizmet sunuyoruz.
             </p>
           </div>

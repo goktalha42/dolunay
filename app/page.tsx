@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaBluetooth, FaCheckCircle } from "react-icons/fa";
+import { FaBluetooth } from "react-icons/fa";
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

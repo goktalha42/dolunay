@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.sizindomaininiz.com/sitemap.xml 
+Sitemap: https://ankara.dolunayisitmecihazlari.com/sitemap.xml 

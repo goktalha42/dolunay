@@ -1,0 +1,10 @@
+Bu klasöre aşağıdaki görselleri yüklemeniz gerekiyor:
+
+- logo.png - Dolunay İşitme Cihazları logosu
+- hero-bg.jpg - Ana sayfa için arka plan görseli
+- product1.jpg - Vista Premium Serisi işitme cihazı görseli
+- product2.jpg - Vista Comfort Serisi işitme cihazı görseli
+- about-us.jpg - Hakkımızda sayfası için ekip fotoğrafı
+- contact.jpg - İletişim sayfası için görsel
+
+Not: Gerçek görselleri Hostinger'a yüklerken bu placeholder dosyasını silebilirsiniz. 

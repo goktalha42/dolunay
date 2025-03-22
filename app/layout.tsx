@@ -4,7 +4,7 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 
 const inter = Inter({ subsets: ["latin"] });
-const DOMAIN = "sizindomaininiz.com"; // Burayı kendi domain adınızla değiştirin
+const DOMAIN = "ankara.dolunayisitmecihazlari.com"; // Gerçek domain adresi
 
 export const metadata: Metadata = {
   title: "Dolunay İşitme Cihazları Merkezi | Keçiören Ankara",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Dolunay İşitme Cihazları Merkezi | Keçiören Ankara",
     description: "Ankara Keçiören'de profesyonel işitme cihazı hizmetleri. Ücretsiz işitme testi, Vista işitme cihazları ve bakım hizmetleri.",
-    url: `https://www.${DOMAIN}/`,
+    url: `https://${DOMAIN}/`,
     siteName: "Dolunay İşitme Cihazları Merkezi",
     locale: "tr_TR",
     type: "website",
