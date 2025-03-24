@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
+import { Providers } from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 const DOMAIN = "ankara.dolunayisitmecihazlari.com"; // Gerçek domain adresi
@@ -29,10 +30,12 @@ export default function RootLayout({
   return (
     <html lang="tr" className="scroll-smooth">
       <body className={inter.className}>
-        <Navbar />
-        <div className="pt-16">
-          {children}
-        </div>
+        <Providers>
+          <Navbar />
+          <div className="pt-16">
+            {children}
+          </div>
+        </Providers>
       </body>
     </html>
   );

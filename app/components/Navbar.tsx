@@ -27,14 +27,14 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center">
-            <div className="relative h-12 w-48">
+            <div className="relative h-10 w-32 md:h-12 md:w-48">
               <Image 
                 src="/images/logo.png" 
                 alt="Dolunay İşitme Cihazları Merkezi"
                 fill
                 style={{ objectFit: 'contain' }}
                 priority
-                className={isScrolled ? "" : "filter brightness-0 invert"}
+                className={`${isScrolled ? "" : "filter brightness-0 invert"} max-w-full`}
               />
             </div>
           </Link>
@@ -76,9 +76,9 @@ export default function Navbar() {
             aria-label="Menüyü Aç/Kapat"
           >
             {isOpen ? (
-              <FaTimes className="text-white" />
+              <FaTimes className={`${isScrolled ? "text-gray-800" : "text-white"}`} />
             ) : (
-              <FaBars className="text-white" />
+              <FaBars className={`${isScrolled ? "text-gray-800" : "text-white"}`} />
             )}
           </button>
         </div>
