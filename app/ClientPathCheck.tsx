@@ -1,15 +1,26 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
+import Navbar from "./components/Navbar";
 
-interface ClientPathCheckProps {
-  children: (isAdminPage: boolean) => ReactNode;
-}
-
-export default function ClientPathCheck({ children }: ClientPathCheckProps) {
+export default function ClientPathCheck({ 
+  children 
+}: { 
+  children: React.ReactNode
+}) {
+  // usePathname kullanarak URL'yi kontrol et
   const pathname = usePathname();
-  const isAdminPage = pathname?.startsWith("/admin") || false;
-  
-  return <>{children(isAdminPage)}</>;
+  const isAdminPage = pathname?.startsWith('/admin') || false;
+
+  return (
+    <>
+      {/* Admin sayfaları dışında Navbar'ı göster */}
+      {!isAdminPage && <Navbar />}
+      
+      {/* Admin sayfalarında padding ekleme */}
+      <div className={!isAdminPage ? "pt-16" : ""}>
+        {children}
+      </div>
+    </>
+  );
 } 

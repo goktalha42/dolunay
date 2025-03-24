@@ -109,30 +109,6 @@ export default function AdminLayout({
     <div className="flex h-screen bg-gray-100">
       <AdminSidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
-        {/* Üst Çubuk */}
-        <header className="bg-white shadow-sm z-10">
-          <div className="flex items-center justify-between h-16 px-4">
-            <div className="flex items-center">
-              <div className="text-[#505A64]">
-                <div className="text-sm opacity-75">
-                  {currentDate}
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center">
-              <span className="text-sm font-medium text-[#505A64] mr-2">
-                Merhaba, {session?.user?.name || 'Admin'}
-              </span>
-              <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="font-medium text-blue-600 text-lg">
-                  {session?.user?.name ? session.user.name.charAt(0) : 'A'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </header>
-        
         {/* İçerik Alanı */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
           {children}

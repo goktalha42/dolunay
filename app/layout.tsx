@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/Navbar";
 import { Providers } from "./providers";
+import ClientPathCheck from "./ClientPathCheck";
 
 const inter = Inter({ subsets: ["latin"] });
 const DOMAIN = "ankara.dolunayisitmecihazlari.com"; // Gerçek domain adresi
@@ -31,10 +31,9 @@ export default function RootLayout({
     <html lang="tr" className="scroll-smooth">
       <body className={inter.className}>
         <Providers>
-          <Navbar />
-          <div className="pt-16">
+          <ClientPathCheck>
             {children}
-          </div>
+          </ClientPathCheck>
         </Providers>
       </body>
     </html>
