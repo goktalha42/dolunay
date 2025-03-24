@@ -27,6 +27,29 @@ import AdminSidebar from "./components/AdminSidebar";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// Sayfa adlarını pathname'den türetme fonksiyonu
+const getPageTitle = (pathname: string) => {
+  const parts = pathname.split('/');
+  const lastPart = parts[parts.length - 1];
+  
+  const titles: {[key: string]: string} = {
+    'dashboard': 'Gösterge Paneli',
+    'urunler': 'Ürünler',
+    'stoklar': 'Stoklar',
+    'musteriler': 'Müşterilerimiz',
+    'belgeler': 'Belgelerimiz',
+    'galeri': 'Galeri',
+    'iletisim': 'İletişim Formları',
+    'takvim': 'Takvim',
+    'bildirimler': 'Bildirimler',
+    'destek': 'Destek',
+    'ayarlar': 'Ayarlar',
+    'blog': 'Blog Yazıları'
+  };
+  
+  return titles[lastPart] || 'Admin Panel';
+};
+
 export default function AdminLayout({
   children,
 }: {
@@ -38,6 +61,7 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
   const { data: session, status } = useSession();
+  const pageTitle = getPageTitle(pathname || '');
   
   // Client-side işlemleri güvenli hale getirmek için
   useEffect(() => {
@@ -109,6 +133,35 @@ export default function AdminLayout({
     <div className="flex h-screen bg-gray-100">
       <AdminSidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Admin Paneli Header */}
+        <header className="bg-white shadow-sm z-10 border-b border-gray-200">
+          <div className="flex items-center justify-between h-16 px-4">
+            {/* Logo ve Sayfa Başlığı */}
+            <div className="flex items-center">
+              <div className="text-[#505A64] text-sm opacity-75">
+                {currentDate}
+              </div>
+            </div>
+            
+            {/* Sayfa Başlığı - Orta */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <h1 className="text-xl font-medium text-gray-800">{pageTitle}</h1>
+            </div>
+            
+            {/* Kullanıcı Bilgisi */}
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-[#505A64] mr-2">
+                Merhaba, {session?.user?.name || 'Admin'}
+              </span>
+              <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center">
+                <span className="font-medium text-blue-600 text-lg">
+                  {session?.user?.name ? session.user.name.charAt(0) : 'A'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </header>
+        
         {/* İçerik Alanı */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
           {children}

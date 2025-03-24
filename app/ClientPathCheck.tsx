@@ -17,7 +17,7 @@ export default function ClientPathCheck({
       {/* Admin sayfaları dışında Navbar'ı göster */}
       {!isAdminPage && <Navbar />}
       
-      {/* Admin sayfalarında padding ekleme */}
+      {/* Admin sayfalarında padding ekleme, site sayfalarında padding ekle */}
       <div className={!isAdminPage ? "pt-16" : ""}>
         {children}
       </div>
