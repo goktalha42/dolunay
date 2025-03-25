@@ -1,236 +1,354 @@
 "use client";
 
-import { useState } from "react";
-import { FaPlus, FaEdit, FaTrash, FaSearch, FaBoxOpen } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { FaPlus, FaEdit, FaTrash, FaImage } from "react-icons/fa";
+import Image from "next/image";
 
-// Demo ürünler
-const demoProducts = [
-  {
-    id: 1,
-    name: "Vista Bluetooth İşitme Cihazı Model V1",
-    category: "İşitme Cihazları",
-    price: 12500,
-    stock: 15,
-    status: "Aktif"
-  },
-  {
-    id: 2,
-    name: "Vista Kulak İçi İşitme Cihazı",
-    category: "İşitme Cihazları",
-    price: 8750,
-    stock: 8,
-    status: "Aktif"
-  },
-  {
-    id: 3,
-    name: "İşitme Cihazı Bakım Kiti",
-    category: "Aksesuarlar",
-    price: 450,
-    stock: 45,
-    status: "Aktif"
-  },
-  {
-    id: 4,
-    name: "İşitme Cihazı Pili (6'lı Paket)",
-    category: "Sarf Malzemeleri",
-    price: 120,
-    stock: 200,
-    status: "Aktif"
-  },
-  {
-    id: 5,
-    name: "Vista Premium İşitme Cihazı",
-    category: "İşitme Cihazları",
-    price: 18900,
-    stock: 4,
-    status: "Sınırlı"
-  },
-  {
-    id: 6,
-    name: "Kulak Kalıbı",
-    category: "Aksesuarlar",
-    price: 350,
-    stock: 0,
-    status: "Tükendi"
-  }
-];
+interface Product {
+  id: number;
+  title: string;
+  short_description: string;
+  category_id: number;
+  segment: "başlangıç" | "orta" | "üst";
+  main_image: string;
+  features: string[];
+  additional_images: string[];
+}
+
+interface Category {
+  id: number;
+  name: string;
+  parent_id: number | null;
+}
+
+interface FormDataType {
+  title: string;
+  short_description: string;
+  category_id: number;
+  segment: "başlangıç" | "orta" | "üst";
+  main_image: File | null;
+  features: string[];
+  additional_images: File[];
+}
 
 export default function ProductsAdmin() {
-  const [products, setProducts] = useState(demoProducts);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [formData, setFormData] = useState<FormDataType>({
+    title: "",
+    short_description: "",
+    category_id: 0,
+    segment: "orta",
+    main_image: null,
+    features: [""],
+    additional_images: []
+  });
 
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleDelete = (id: number) => {
-    setSelectedProductId(id);
-    setShowDeleteModal(true);
-  };
-
-  const confirmDelete = () => {
-    if (selectedProductId) {
-      const updatedProducts = products.filter(product => product.id !== selectedProductId);
-      setProducts(updatedProducts);
-      setShowDeleteModal(false);
-      setSelectedProductId(null);
+  // Ürünleri getir
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch("/api/admin/products");
+      if (!response.ok) {
+        throw new Error('Ürünler getirilemedi');
+      }
+      const data = await response.json();
+      // API'den gelen veriyi kontrol ediyoruz
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Ürünler yüklenirken hata:", error);
+      setProducts([]); // Hata durumunda boş array
     }
   };
 
+  // Kategorileri getir
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/admin/categories");
+      const data = await response.json();
+      setCategories(data);
+    } catch (error) {
+      console.error("Kategoriler yüklenirken hata:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formDataToSend = new FormData();
+    
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === "features") {
+        formDataToSend.append(key, JSON.stringify(value));
+      } else if (key === "additional_images") {
+        Array.from(value as File[]).forEach((file) => {
+          formDataToSend.append("additional_images", file);
+        });
+      } else if (key === "main_image" && value) {
+        formDataToSend.append(key, value as File);
+      } else {
+        formDataToSend.append(key, value as string);
+      }
+    });
+
+    try {
+      const url = selectedProduct 
+        ? `/api/admin/products/${selectedProduct.id}` 
+        : "/api/admin/products";
+      
+      const method = selectedProduct ? "PUT" : "POST";
+      
+      const response = await fetch(url, {
+        method,
+        body: formDataToSend,
+      });
+
+      if (response.ok) {
+        setShowModal(false);
+        fetchProducts();
+        resetForm();
+      }
+    } catch (error) {
+      console.error("Ürün kaydedilirken hata:", error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (confirm("Bu ürünü silmek istediğinize emin misiniz?")) {
+      try {
+        const response = await fetch(`/api/admin/products/${id}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          fetchProducts();
+        }
+      } catch (error) {
+        console.error("Ürün silinirken hata:", error);
+      }
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      short_description: "",
+      category_id: 0,
+      segment: "orta",
+      main_image: null,
+      features: [""],
+      additional_images: []
+    });
+    setSelectedProduct(null);
+  };
+
+  const handleProductEdit = (product: Product) => {
+    setSelectedProduct(product);
+    setFormData({
+      title: product.title,
+      short_description: product.short_description,
+      category_id: product.category_id,
+      segment: product.segment,
+      main_image: null,
+      features: product.features,
+      additional_images: []
+    });
+    setShowModal(true);
+  };
+
   return (
-    <div>
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Ürün Yönetimi</h1>
-        <button className="flex items-center bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
-          <FaPlus className="mr-2" />
-          Yeni Ürün
+        <h1 className="text-2xl font-semibold">Ürün Yönetimi</h1>
+        <button
+          onClick={() => {
+            resetForm();
+            setShowModal(true);
+          }}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+        >
+          <FaPlus /> Yeni Ürün
         </button>
       </div>
-      
-      {/* Arama ve Filtreleme */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-        <div className="flex items-center relative">
-          <input
-            type="text"
-            placeholder="Ürün ara..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <FaSearch className="absolute left-3 text-gray-400" />
-        </div>
-      </div>
-      
-      {/* İstatistik Kartları */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-blue-100 text-blue-500 mr-4">
-              <FaBoxOpen className="text-xl" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Toplam Ürün</p>
-              <p className="text-2xl font-bold text-gray-700">{products.length}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-green-100 text-green-500 mr-4">
-              <FaBoxOpen className="text-xl" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Aktif Ürünler</p>
-              <p className="text-2xl font-bold text-gray-700">
-                {products.filter(p => p.status === "Aktif").length}
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-red-500">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-red-100 text-red-500 mr-4">
-              <FaBoxOpen className="text-xl" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Tükenen Ürünler</p>
-              <p className="text-2xl font-bold text-gray-700">
-                {products.filter(p => p.status === "Tükendi").length}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
+
       {/* Ürün Listesi */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ürün Adı</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fiyat</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredProducts.map((product) => (
-                <tr key={product.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{product.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.category}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.price.toLocaleString('tr-TR')} ₺</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{product.stock}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span 
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${product.status === "Aktif" ? "bg-green-100 text-green-800" : 
-                        product.status === "Sınırlı" ? "bg-yellow-100 text-yellow-800" : 
-                        "bg-red-100 text-red-800"}`}
-                    >
-                      {product.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex space-x-2">
-                      <button className="text-blue-500 hover:text-blue-700">
-                        <FaEdit />
-                      </button>
-                      <button 
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDelete(product.id)}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {products.map((product) => (
+          <div key={product.id} className="bg-white rounded-lg shadow-md p-4">
+            <div className="relative h-48 mb-4">
+              <Image
+                src={product.main_image}
+                alt={product.title}
+                fill
+                className="object-contain rounded-lg"
+              />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">{product.title}</h3>
+            <p className="text-gray-600 text-sm mb-4">{product.short_description}</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => handleProductEdit(product)}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                <FaEdit />
+              </button>
+              <button
+                onClick={() => handleDelete(product.id)}
+                className="text-red-600 hover:text-red-800"
+              >
+                <FaTrash />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Ürün Ekleme/Düzenleme Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-4">
+              {selectedProduct ? "Ürün Düzenle" : "Yeni Ürün Ekle"}
+            </h2>
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Ürün Adı</label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    className="w-full border rounded-lg p-2"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Kısa Açıklama</label>
+                  <textarea
+                    value={formData.short_description}
+                    onChange={(e) => setFormData({...formData, short_description: e.target.value})}
+                    className="w-full border rounded-lg p-2"
+                    rows={3}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Kategori</label>
+                  <select
+                    value={formData.category_id}
+                    onChange={(e) => setFormData({...formData, category_id: parseInt(e.target.value)})}
+                    className="w-full border rounded-lg p-2"
+                    required
+                  >
+                    <option value={0}>Kategori Seçin</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Segment</label>
+                  <select
+                    value={formData.segment}
+                    onChange={(e) => setFormData({...formData, segment: e.target.value as any})}
+                    className="w-full border rounded-lg p-2"
+                    required
+                  >
+                    <option value="başlangıç">Başlangıç Segmenti</option>
+                    <option value="orta">Orta Segment</option>
+                    <option value="üst">Üst Segment</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Ana Resim</label>
+                  <input
+                    type="file"
+                    onChange={(e) => setFormData({...formData, main_image: e.target.files?.[0] || null})}
+                    className="w-full border rounded-lg p-2"
+                    accept="image/*"
+                    required={!selectedProduct}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Ek Resimler</label>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => setFormData({...formData, additional_images: Array.from(e.target.files || [])})}
+                    className="w-full border rounded-lg p-2"
+                    accept="image/*"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Özellikler</label>
+                  {formData.features.map((feature, index) => (
+                    <div key={index} className="flex gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={feature}
+                        onChange={(e) => {
+                          const newFeatures = [...formData.features];
+                          newFeatures[index] = e.target.value;
+                          setFormData({...formData, features: newFeatures});
+                        }}
+                        className="flex-1 border rounded-lg p-2"
+                        placeholder="Ürün özelliği"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFeatures = formData.features.filter((_, i) => i !== index);
+                          setFormData({...formData, features: newFeatures});
+                        }}
+                        className="text-red-600 hover:text-red-800"
                       >
                         <FaTrash />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-              
-              {filteredProducts.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-sm text-gray-500">
-                    Sonuç bulunamadı
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      
-      {/* Silme Onay Modalı */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Ürünü Sil</h3>
-            <p className="text-gray-600 mb-6">
-              Bu ürünü silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button 
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-                onClick={() => setShowDeleteModal(false)}
-              >
-                İptal
-              </button>
-              <button 
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                onClick={confirmDelete}
-              >
-                Sil
-              </button>
-            </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, features: [...formData.features, ""]})}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    + Özellik Ekle
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-4 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    resetForm();
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+                >
+                  {selectedProduct ? "Güncelle" : "Kaydet"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

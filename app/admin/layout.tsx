@@ -68,7 +68,7 @@ export default function AdminLayout({
     setIsClient(true);
     
     // Sadece login sayfası değilse kontrol yap
-    if (pathname !== "/admin") {
+    if (pathname !== "/admin" && pathname !== "/admin/giris") {
       // Tarih bilgisini ayarla
       const options: Intl.DateTimeFormatOptions = { 
         year: 'numeric', 
@@ -79,12 +79,13 @@ export default function AdminLayout({
       const today = new Date();
       setCurrentDate(today.toLocaleDateString('tr-TR', options));
       
-      // Hata durumunda localStorage kontrolü
+      // Kimlik doğrulama kontrolü
       if (status === "unauthenticated") {
-        const isLoggedIn = localStorage.getItem("adminLoggedIn");
-        if (!isLoggedIn) {
-          router.push("/admin");
-        }
+        // Sayfa yenilenmesi durumunda aşırı yönlendirme olmaması için timeout kullanıyoruz
+        const timer = setTimeout(() => {
+          window.location.href = "/admin/giris";
+        }, 100);
+        return () => clearTimeout(timer);
       }
       
       // Mobil görünüm için sidebar'ı kapalı başlat
@@ -115,7 +116,7 @@ export default function AdminLayout({
   };
 
   // Sadece login sayfasında layout'u gösterme
-  if (pathname === "/admin") {
+  if (pathname === "/admin" || pathname === "/admin/giris") {
     return <>{children}</>;
   }
 

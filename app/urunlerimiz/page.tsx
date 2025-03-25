@@ -1,15 +1,45 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { FaBluetooth, FaCheckCircle, FaBatteryFull, FaWater } from "react-icons/fa";
-import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: "Ürünlerimiz | Vista İşitme Cihazları | Dolunay İşitme",
-  description: "Vista işitme cihazları ürün serisi. Bluetooth bağlantılı, şarj edilebilir ve su geçirmez işitme cihazları. Premium ve Comfort serisi işitme cihazlarını keşfedin.",
-  keywords: ["Vista işitme cihazları", "bluetooth işitme cihazı", "şarj edilebilir işitme cihazı", "su geçirmez işitme cihazı", "Ankara işitme cihazı satışı"],
-};
+interface Product {
+  id: number;
+  title: string;
+  short_description: string;
+  category_id: number;
+  category_name: string;
+  segment: "başlangıç" | "orta" | "üst";
+  main_image: string;
+  features: string[];
+  additional_images: string[];
+}
 
-export default function Urunlerimiz() {
+export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch("/api/admin/products");
+      if (!response.ok) {
+        throw new Error('Ürünler getirilemedi');
+      }
+      const data = await response.json();
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Ürünler yüklenirken hata:", error);
+      setProducts([]);
+    }
+  };
+
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
@@ -190,6 +220,118 @@ export default function Urunlerimiz() {
           </div>
         </div>
       </section>
+
+      {/* Ürün Kartları */}
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-center mb-8">Ürünlerimiz</h1>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+            >
+              <div className="relative h-64">
+                <Image
+                  src={product.main_image}
+                  alt={product.title}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="p-6">
+                <h2 className="text-xl font-semibold mb-2">{product.title}</h2>
+                <p className="text-gray-600 mb-4">{product.short_description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">{product.category_name}</span>
+                  <button
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setShowModal(true);
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Detaylar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Ürün Detay Modalı */}
+      {showModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <h2 className="text-2xl font-semibold">{selectedProduct.title}</h2>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setSelectedProduct(null);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Sol Taraf - Resimler */}
+              <div className="space-y-4">
+                <div className="relative h-96">
+                  <Image
+                    src={selectedProduct.main_image}
+                    alt={selectedProduct.title}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {selectedProduct.additional_images.map((image, index) => (
+                    <div key={index} className="relative h-20">
+                      <Image
+                        src={image}
+                        alt={`${selectedProduct.title} - ${index + 1}`}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sağ Taraf - Bilgiler */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Ürün Açıklaması</h3>
+                  <p className="text-gray-600">{selectedProduct.short_description}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Özellikler</h3>
+                  <ul className="list-disc list-inside space-y-2">
+                    {selectedProduct.features.map((feature, index) => (
+                      <li key={index} className="text-gray-600">{feature}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Kategori</h3>
+                  <p className="text-gray-600">{selectedProduct.category_name}</p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Segment</h3>
+                  <p className="text-gray-600 capitalize">{selectedProduct.segment}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 } 
