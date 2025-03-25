@@ -1,105 +1,90 @@
 import { NextResponse } from "next/server";
-import { sql } from "@vercel/postgres";
+import { getProductById, updateProduct, deleteProduct } from "@/lib/db";
 
-// Ürün güncelle
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, context: { params: { id: string } }) {
+  const { params } = context;
+  
   try {
-    const formData = await request.formData();
     const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Geçersiz ürün ID'si" }, { status: 400 });
+    }
     
-    // Ana bilgileri al
+    const product = await getProductById(id);
+    
+    if (!product) {
+      return NextResponse.json({ error: "Ürün bulunamadı" }, { status: 404 });
+    }
+    
+    return NextResponse.json(product);
+  } catch (error) {
+    console.error("Ürün getirilirken hata:", error);
+    return NextResponse.json({ error: "Ürün getirilemedi" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request, context: { params: { id: string } }) {
+  const { params } = context;
+  
+  try {
+    const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Geçersiz ürün ID'si" }, { status: 400 });
+    }
+    
+    const formData = await request.formData();
     const title = formData.get("title") as string;
     const short_description = formData.get("short_description") as string;
     const category_id = parseInt(formData.get("category_id") as string);
     const segment = formData.get("segment") as string;
-    const features = JSON.parse(formData.get("features") as string);
+    const main_image = formData.get("main_image") as string || '/images/products/default.jpg';
+    const features = JSON.parse(formData.get("features") as string || "[]");
+    const additional_images = JSON.parse(formData.get("additional_images") as string || "[]");
     
-    // Ürünü güncelle
-    const { rows: [product] } = await sql`
-      UPDATE products 
-      SET 
-        title = ${title},
-        short_description = ${short_description},
-        category_id = ${category_id},
-        segment = ${segment}
-      WHERE id = ${id}
-      RETURNING *
-    `;
-
-    // Ana resmi güncelle (eğer yeni resim yüklendiyse)
-    const main_image = formData.get("main_image") as File;
-    if (main_image) {
-      const main_image_path = await saveImage(main_image);
-      await sql`
-        UPDATE products 
-        SET main_image = ${main_image_path}
-        WHERE id = ${id}
-      `;
+    if (!title || !title.trim()) {
+      return NextResponse.json({ error: "Ürün adı boş olamaz" }, { status: 400 });
     }
-
-    // Özellikleri güncelle
-    await sql`DELETE FROM product_features WHERE product_id = ${id}`;
-    for (const feature of features) {
-      await sql`
-        INSERT INTO product_features (product_id, feature_text)
-        VALUES (${id}, ${feature})
-      `;
+    
+    // Ürün var mı kontrol et
+    const existingProduct = await getProductById(id);
+    if (!existingProduct) {
+      return NextResponse.json({ error: "Ürün bulunamadı" }, { status: 404 });
     }
-
-    // Ek resimleri güncelle
-    const additional_images = formData.getAll("additional_images") as File[];
-    if (additional_images.length > 0) {
-      await sql`DELETE FROM product_images WHERE product_id = ${id}`;
-      for (const image of additional_images) {
-        const image_path = await saveImage(image);
-        await sql`
-          INSERT INTO product_images (product_id, image_path)
-          VALUES (${id}, ${image_path})
-        `;
-      }
-    }
-
-    return NextResponse.json(product);
+    
+    const updatedProduct = await updateProduct(id, { 
+      title: title.trim(),
+      short_description,
+      category_id,
+      segment,
+      main_image,
+      additional_images,
+      features
+    });
+    
+    return NextResponse.json(updatedProduct);
   } catch (error) {
     console.error("Ürün güncellenirken hata:", error);
-    return NextResponse.json(
-      { error: "Ürün güncellenemedi" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Ürün güncellenemedi" }, { status: 500 });
   }
 }
 
-// Ürün sil
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: Request, context: { params: { id: string } }) {
+  const { params } = context;
+  
   try {
     const id = parseInt(params.id);
-
-    // Önce bağlı kayıtları sil
-    await sql`DELETE FROM product_features WHERE product_id = ${id}`;
-    await sql`DELETE FROM product_images WHERE product_id = ${id}`;
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Geçersiz ürün ID'si" }, { status: 400 });
+    }
     
-    // Sonra ürünü sil
-    await sql`DELETE FROM products WHERE id = ${id}`;
-
+    const success = await deleteProduct(id);
+    if (!success) {
+      return NextResponse.json({ error: "Ürün silinemedi" }, { status: 400 });
+    }
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Ürün silinirken hata:", error);
-    return NextResponse.json(
-      { error: "Ürün silinemedi" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Ürün silinemedi" }, { status: 500 });
   }
-}
-
-// Resim kaydetme fonksiyonu
-async function saveImage(file: File): Promise<string> {
-  // Burada resmi bir CDN'e veya local storage'a kaydetme işlemi yapılacak
-  // Şimdilik dummy bir path döndürüyoruz
-  return `/images/products/${file.name}`;
 } 

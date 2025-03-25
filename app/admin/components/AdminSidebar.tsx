@@ -19,7 +19,8 @@ import {
   FaBell,
   FaQuestionCircle,
   FaCog,
-  FaSignOutAlt
+  FaSignOutAlt,
+  FaList
 } from "react-icons/fa";
 
 export default function AdminSidebar() {
@@ -31,6 +32,79 @@ export default function AdminSidebar() {
     // Logout işlemi burada gerçekleştirilebilir
     console.log("Logout clicked");
   };
+
+  // Admin sidebar öğeleri
+  const sidebarItems = [
+    { 
+      path: "/admin/dashboard", 
+      label: "Gösterge Paneli", 
+      icon: <FaTachometerAlt className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
+      path: "/admin/kategoriler", 
+      label: "Kategoriler", 
+      icon: <FaList className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
+      path: "/admin/urunler", 
+      label: "Ürünler", 
+      icon: <FaBoxOpen className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
+      path: "/admin/blog", 
+      label: "Blog Yazıları", 
+      icon: <FaNewspaper className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
+      path: "/admin/stoklar", 
+      label: "Stoklar", 
+      icon: <FaBox className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
+      path: "/admin/musteriler", 
+      label: "Müşterilerimiz", 
+      icon: <FaUsers className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
+      path: "/admin/belgeler", 
+      label: "Belgelerimiz", 
+      icon: <FaFileAlt className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
+      path: "/admin/galeri", 
+      label: "Galeri", 
+      icon: <FaImage className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
+      path: "/admin/iletisim", 
+      label: "İletişim Formları", 
+      icon: <FaPhone className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
+      path: "/admin/takvim", 
+      label: "Takvim", 
+      icon: <FaCalendarAlt className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    }
+  ];
+
+  // Alt menü öğeleri
+  const bottomItems = [
+    { 
+      path: "/admin/bildirimler", 
+      label: "Bildirimler", 
+      icon: <FaBell className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} /> 
+    },
+    { 
+      path: "/admin/destek", 
+      label: "Destek", 
+      icon: <FaQuestionCircle className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} /> 
+    },
+    { 
+      path: "/admin/ayarlar", 
+      label: "Ayarlar", 
+      icon: <FaCog className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} /> 
+    }
+  ];
 
   return (
     <>
@@ -85,178 +159,42 @@ export default function AdminSidebar() {
           {/* Ana Menü */}
           <nav className="flex-1 py-2 overflow-y-auto">
             <ul className="space-y-0.5 px-2">
-              <li>
-                <Link 
-                  href="/admin/dashboard" 
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/dashboard" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaTachometerAlt className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Gösterge Paneli</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  href="/admin/blog" 
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/blog" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaNewspaper className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Blog Yazıları</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  href="/admin/urunler" 
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/urunler" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaBox className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Ürünler</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  href="/admin/stoklar" 
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/stoklar" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaBoxOpen className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Stoklar</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  href="/admin/musteriler" 
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/musteriler" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaUsers className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Müşterilerimiz</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  href="/admin/belgeler" 
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/belgeler" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaFileAlt className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Belgelerimiz</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  href="/admin/galeri" 
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/galeri" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaImage className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Galeri</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  href="/admin/iletisim" 
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/iletisim" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaPhone className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">İletişim Formları</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link 
-                  href="/admin/takvim" 
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/takvim" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaCalendarAlt className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Takvim</span>}
-                </Link>
-              </li>
+              {sidebarItems.map((item) => (
+                <li key={item.path}>
+                  <Link 
+                    href={item.path} 
+                    className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
+                      pathname === item.path 
+                        ? "bg-blue-50 text-blue-600" 
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {item.icon}
+                    {isSidebarOpen && <span className="font-medium">{item.label}</span>}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
           
           {/* Alt menü */}
           <div className="mt-auto px-2 py-3 border-t border-gray-200">
             <ul className="space-y-0.5">
-              <li>
-                <Link
-                  href="/admin/bildirimler"
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/bildirimler" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaBell className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Bildirimler</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link
-                  href="/admin/destek"
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/destek" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaQuestionCircle className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Destek</span>}
-                </Link>
-              </li>
-              
-              <li>
-                <Link
-                  href="/admin/ayarlar"
-                  className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                    pathname === "/admin/ayarlar" 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  <FaCog className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-                  {isSidebarOpen && <span className="font-medium">Ayarlar</span>}
-                </Link>
-              </li>
+              {bottomItems.map((item) => (
+                <li key={item.path}>
+                  <Link
+                    href={item.path}
+                    className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
+                      pathname === item.path 
+                        ? "bg-blue-50 text-blue-600" 
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {item.icon}
+                    {isSidebarOpen && <span className="font-medium">{item.label}</span>}
+                  </Link>
+                </li>
+              ))}
               
               <li>
                 <button

@@ -1,42 +1,38 @@
 import { NextResponse } from "next/server";
-import { getCategories, getCategoryById, addCategory, updateCategory, deleteCategory } from "@/lib/db";
+import { getCategoryById, updateCategory, deleteCategory } from "@/lib/db";
 
-// Tüm kategorileri getir
-export async function GET() {
+export async function GET(request: Request, context: { params: { id: string } }) {
+  const { params } = context;
+  
   try {
-    const categories = await getCategories();
-    return NextResponse.json(categories);
-  } catch (error) {
-    console.error("Kategoriler getirilirken hata:", error);
-    return NextResponse.json({ error: "Kategoriler getirilemedi" }, { status: 500 });
-  }
-}
-
-// Yeni kategori ekle
-export async function POST(request: Request) {
-  try {
-    const { name, parent_id } = await request.json();
-
-    if (!name || !name.trim()) {
-      return NextResponse.json({ error: "Kategori adı boş olamaz" }, { status: 400 });
+    const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Geçersiz kategori ID'si" }, { status: 400 });
     }
-
-    const newCategory = await addCategory({ name: name.trim(), parent_id: parent_id || null });
-    return NextResponse.json(newCategory);
-  } catch (error) {
-    console.error("Kategori eklenirken hata:", error);
-    return NextResponse.json({ error: "Kategori eklenemedi" }, { status: 500 });
-  }
-}
-
-// Kategori güncelle
-export async function PUT(request: Request) {
-  try {
-    const { id, name, parent_id } = await request.json();
     
-    if (id === undefined || id === null) {
-      return NextResponse.json({ error: "Kategori ID'si gerekli" }, { status: 400 });
+    const category = await getCategoryById(id);
+    
+    if (!category) {
+      return NextResponse.json({ error: "Kategori bulunamadı" }, { status: 404 });
     }
+    
+    return NextResponse.json(category);
+  } catch (error) {
+    console.error("Kategori getirilirken hata:", error);
+    return NextResponse.json({ error: "Kategori getirilemedi" }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request, context: { params: { id: string } }) {
+  const { params } = context;
+  
+  try {
+    const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Geçersiz kategori ID'si" }, { status: 400 });
+    }
+    
+    const { name, parent_id } = await request.json();
     
     if (!name || !name.trim()) {
       return NextResponse.json({ error: "Kategori adı boş olamaz" }, { status: 400 });
@@ -65,24 +61,25 @@ export async function PUT(request: Request) {
   }
 }
 
-// Kategori sil
-export async function DELETE(request: Request) {
+export async function DELETE(request: Request, context: { params: { id: string } }) {
+  const { params } = context;
+  
   try {
-    const { id } = await request.json();
-    if (id === undefined || id === null) {
-      return NextResponse.json({ error: "Kategori ID'si gerekli" }, { status: 400 });
+    const id = parseInt(params.id);
+    if (isNaN(id)) {
+      return NextResponse.json({ error: "Geçersiz kategori ID'si" }, { status: 400 });
     }
-
+    
     const success = await deleteCategory(id);
     if (!success) {
       return NextResponse.json({ 
         error: "Kategori silinemedi. Bu kategoriye ait alt kategoriler veya ürünler olabilir." 
       }, { status: 400 });
     }
-
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Kategori silinirken hata:", error);
     return NextResponse.json({ error: "Kategori silinemedi" }, { status: 500 });
   }
-}
+} 

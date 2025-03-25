@@ -3,7 +3,13 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { FaBluetooth, FaCheckCircle, FaBatteryFull, FaWater } from "react-icons/fa";
+import { FaBluetooth, FaCheckCircle, FaBatteryFull, FaWater, FaFilter, FaChevronDown, FaChevronRight } from "react-icons/fa";
+
+interface Category {
+  id: number;
+  name: string;
+  parent_id: number | null;
+}
 
 interface Product {
   id: number;
@@ -19,12 +25,32 @@ interface Product {
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/admin/categories");
+      if (!response.ok) {
+        throw new Error('Kategoriler getirilemedi');
+      }
+      const data = await response.json();
+      setCategories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Kategoriler yüklenirken hata:", error);
+      setCategories([]);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -40,8 +66,68 @@ export default function ProductsPage() {
     }
   };
 
+  // Alt kategorileri bul
+  const getChildCategories = (parentId: number | null) => {
+    return categories.filter(category => category.parent_id === parentId);
+  };
+
+  // Kategori alt kategoriye sahip mi kontrol et
+  const hasChildren = (categoryId: number) => {
+    return categories.some(category => category.parent_id === categoryId);
+  };
+
+  // Kategori ve alt kategorilerini içeren tüm kategori ID'lerini getir
+  const getCategoryAndDescendantIds = (categoryId: number): number[] => {
+    const result = [categoryId];
+    const childCategories = getChildCategories(categoryId);
+    
+    childCategories.forEach(child => {
+      result.push(...getCategoryAndDescendantIds(child.id));
+    });
+    
+    return result;
+  };
+
+  // Ana kategorileri bul
+  const mainCategories = categories.filter(category => category.parent_id === null);
+
+  // Kategori genişletme/daraltma kontrolü
+  const toggleCategoryExpansion = (categoryId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (expandedCategories.includes(categoryId)) {
+      setExpandedCategories(expandedCategories.filter(id => id !== categoryId));
+    } else {
+      setExpandedCategories([...expandedCategories, categoryId]);
+    }
+  };
+
+  // Filtrelenmiş ürünler
+  const filteredProducts = products.filter(product => {
+    // Kategori filtresi
+    if (selectedCategory) {
+      // Seçilen kategori ve tüm alt kategorileri içeren ID listesi
+      const relevantCategoryIds = getCategoryAndDescendantIds(selectedCategory);
+      // Ürün bu kategorilerden birine aitse göster
+      if (!relevantCategoryIds.includes(product.category_id)) {
+        return false;
+      }
+    }
+    
+    // Segment filtresi
+    if (selectedSegment && product.segment !== selectedSegment) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  const resetFilters = () => {
+    setSelectedCategory(null);
+    setSelectedSegment(null);
+  };
+
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-white text-gray-800">
       {/* Hero Section */}
       <section className="relative bg-gray-900 text-white py-24 md:py-32 mt-16">
         <div className="absolute inset-0 z-0">
@@ -64,8 +150,8 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {/* Ürün Kategorileri */}
-      <section className="py-16 bg-white">
+      {/* Ürün Teknolojileri Tanıtım Kısmı */}
+      <section className="py-16 bg-white text-gray-800">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-gray-800">Vista İşitme Cihazları</h2>
           
@@ -221,51 +307,233 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {/* Ürün Kartları */}
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-center mb-8">Ürünlerimiz</h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-            >
-              <div className="relative h-64">
-                <Image
-                  src={product.main_image}
-                  alt={product.title}
-                  fill
-                  className="object-contain"
-                />
+      {/* Ürün Listesi ve Filtreler */}
+      <div className="container mx-auto px-4 py-12 bg-white text-gray-800">
+        <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">Tüm Ürünlerimiz</h2>
+        
+        {/* Mobil Filtre Butonu */}
+        <div className="md:hidden mb-4">
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="w-full flex items-center justify-center gap-2 bg-gray-200 py-3 rounded-lg text-gray-800"
+          >
+            <FaFilter />
+            <span>Filtreleri {showFilters ? 'Gizle' : 'Göster'}</span>
+          </button>
+        </div>
+        
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Filtreler - Sol Kenar */}
+          <div className={`md:w-1/4 ${showFilters ? 'block' : 'hidden md:block'}`}>
+            <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800">Kategoriler</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <button 
+                      onClick={() => setSelectedCategory(null)}
+                      className={`w-full text-left py-1 ${selectedCategory === null ? 'font-semibold text-blue-600' : 'text-gray-700'}`}
+                    >
+                      Tüm Ürünler
+                    </button>
+                  </li>
+                  {mainCategories.map(category => (
+                    <li key={category.id} className="py-1">
+                      <div className="flex items-center">
+                        {hasChildren(category.id) && (
+                          <button 
+                            onClick={(e) => toggleCategoryExpansion(category.id, e)}
+                            className="mr-1 text-gray-500 focus:outline-none p-1"
+                          >
+                            {expandedCategories.includes(category.id) ? 
+                              <FaChevronDown size={12} /> : 
+                              <FaChevronRight size={12} />
+                            }
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => setSelectedCategory(category.id)}
+                          className={`flex-grow text-left ${selectedCategory === category.id ? 'font-semibold text-blue-600' : 'text-gray-700'}`}
+                        >
+                          {category.name}
+                          {hasChildren(category.id) && !expandedCategories.includes(category.id) && (
+                            <span className="ml-2 text-xs text-gray-500">(Alt kategoriler)</span>
+                          )}
+                        </button>
+                      </div>
+                      
+                      {/* Alt Kategoriler */}
+                      {hasChildren(category.id) && expandedCategories.includes(category.id) && (
+                        <ul className="ml-4 mt-2 space-y-1">
+                          {getChildCategories(category.id).map(child => (
+                            <li key={child.id} className="py-1">
+                              <div className="flex items-center">
+                                {hasChildren(child.id) && (
+                                  <button 
+                                    onClick={(e) => toggleCategoryExpansion(child.id, e)}
+                                    className="mr-1 text-gray-500 focus:outline-none p-1"
+                                  >
+                                    {expandedCategories.includes(child.id) ? 
+                                      <FaChevronDown size={12} /> : 
+                                      <FaChevronRight size={12} />
+                                    }
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => setSelectedCategory(child.id)}
+                                  className={`flex-grow text-left ${selectedCategory === child.id ? 'font-semibold text-blue-600' : 'text-gray-600'}`}
+                                >
+                                  {child.name}
+                                  {hasChildren(child.id) && !expandedCategories.includes(child.id) && (
+                                    <span className="ml-2 text-xs text-gray-500">(Alt kategoriler)</span>
+                                  )}
+                                </button>
+                              </div>
+                              
+                              {/* 3. Seviye Kategoriler */}
+                              {hasChildren(child.id) && expandedCategories.includes(child.id) && (
+                                <ul className="ml-4 mt-1 space-y-1">
+                                  {getChildCategories(child.id).map(grandchild => (
+                                    <li key={grandchild.id}>
+                                      <button 
+                                        onClick={() => setSelectedCategory(grandchild.id)}
+                                        className={`w-full text-left py-1 ${selectedCategory === grandchild.id ? 'font-semibold text-blue-600' : 'text-gray-500'}`}
+                                      >
+                                        {grandchild.name}
+                                      </button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="p-6">
-                <h2 className="text-xl font-semibold mb-2">{product.title}</h2>
-                <p className="text-gray-600 mb-4">{product.short_description}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">{product.category_name}</span>
-                  <button
-                    onClick={() => {
-                      setSelectedProduct(product);
-                      setShowModal(true);
-                    }}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Detaylar
-                  </button>
+              
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800">Segment</h3>
+                <div className="space-y-2">
+                  <div>
+                    <label className="inline-flex items-center">
+                      <input 
+                        type="radio" 
+                        name="segment" 
+                        checked={selectedSegment === null} 
+                        onChange={() => setSelectedSegment(null)}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-gray-700">Tümü</span>
+                    </label>
+                  </div>
+                  <div>
+                    <label className="inline-flex items-center">
+                      <input 
+                        type="radio" 
+                        name="segment" 
+                        checked={selectedSegment === 'başlangıç'} 
+                        onChange={() => setSelectedSegment('başlangıç')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-gray-700">Başlangıç</span>
+                    </label>
+                  </div>
+                  <div>
+                    <label className="inline-flex items-center">
+                      <input 
+                        type="radio" 
+                        name="segment" 
+                        checked={selectedSegment === 'orta'} 
+                        onChange={() => setSelectedSegment('orta')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-gray-700">Orta</span>
+                    </label>
+                  </div>
+                  <div>
+                    <label className="inline-flex items-center">
+                      <input 
+                        type="radio" 
+                        name="segment" 
+                        checked={selectedSegment === 'üst'} 
+                        onChange={() => setSelectedSegment('üst')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-gray-700">Üst</span>
+                    </label>
+                  </div>
                 </div>
               </div>
+              
+              <button 
+                onClick={resetFilters}
+                className="w-full py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
+              >
+                Filtreleri Temizle
+              </button>
             </div>
-          ))}
+          </div>
+          
+          {/* Ürün Listesi - Sağ Taraf */}
+          <div className="md:w-3/4">
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-lg shadow border border-gray-200">
+                <p className="text-gray-600 text-lg">Seçilen kriterlere uygun ürün bulunamadı.</p>
+                <button 
+                  onClick={resetFilters}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Filtreleri Temizle
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-200"
+                  >
+                    <div className="relative h-64">
+                      <Image
+                        src={product.main_image}
+                        alt={product.title}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <div className="p-6">
+                      <h2 className="text-xl font-semibold mb-2 text-gray-800">{product.title}</h2>
+                      <p className="text-gray-600 mb-4">{product.short_description}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">{product.category_name}</span>
+                        <button
+                          onClick={() => {
+                            setSelectedProduct(product);
+                            setShowModal(true);
+                          }}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Detaylar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Ürün Detay Modalı */}
       {showModal && selectedProduct && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto text-gray-800">
             <div className="flex justify-between items-start mb-6">
-              <h2 className="text-2xl font-semibold">{selectedProduct.title}</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">{selectedProduct.title}</h2>
               <button
                 onClick={() => {
                   setShowModal(false);
@@ -305,12 +573,12 @@ export default function ProductsPage() {
               {/* Sağ Taraf - Bilgiler */}
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Ürün Açıklaması</h3>
+                  <h3 className="text-lg font-semibold mb-2 text-gray-800">Ürün Açıklaması</h3>
                   <p className="text-gray-600">{selectedProduct.short_description}</p>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Özellikler</h3>
+                  <h3 className="text-lg font-semibold mb-2 text-gray-800">Özellikler</h3>
                   <ul className="list-disc list-inside space-y-2">
                     {selectedProduct.features.map((feature, index) => (
                       <li key={index} className="text-gray-600">{feature}</li>
@@ -319,12 +587,12 @@ export default function ProductsPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Kategori</h3>
+                  <h3 className="text-lg font-semibold mb-2 text-gray-800">Kategori</h3>
                   <p className="text-gray-600">{selectedProduct.category_name}</p>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Segment</h3>
+                  <h3 className="text-lg font-semibold mb-2 text-gray-800">Segment</h3>
                   <p className="text-gray-600 capitalize">{selectedProduct.segment}</p>
                 </div>
               </div>
