@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCategoryById, updateCategory, deleteCategory } from "@/lib/db";
+import { getCategoryById, updateCategory, deleteCategory } from "@/app/lib/db";
 
 export async function GET(request: Request, context: { params: { id: string } }) {
   const { params } = context;

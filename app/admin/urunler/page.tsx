@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { FaPlus, FaEdit, FaTrash, FaImage } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaImage, FaSearch } from "react-icons/fa";
 import Image from "next/image";
 
 interface Product {
@@ -63,6 +63,13 @@ export default function ProductsAdmin() {
 
   // useRef için ana görsel input referansı ekleyelim
   const mainImageRef = useRef<HTMLInputElement>(null);
+
+  // Sıralama için state ekleyelim
+  const [sortField, setSortField] = useState<string>("id");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
+  // Arama için state ekleyelim
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Ürünleri getir
   const fetchProducts = async () => {
@@ -432,6 +439,71 @@ export default function ProductsAdmin() {
     return `/${imageUrl}`;
   };
 
+  // Sıralama fonksiyonu
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Aynı alana tekrar tıklandığında sıralama yönünü değiştir
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Farklı bir alana tıklandığında, o alanı sırala ve varsayılan olarak artan sırala
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Sıralanmış ve filtrelenmiş ürünleri hesapla
+  const filteredAndSortedProducts = [...products]
+    // Önce arama terimine göre filtrele
+    .filter(product => {
+      if (!searchTerm.trim()) return true;
+      
+      const search = searchTerm.toLowerCase().trim();
+      const title = product.title?.toLowerCase() || "";
+      const description = product.short_description?.toLowerCase() || "";
+      const category = getCategoryName(product.category_id)?.toLowerCase() || "";
+      
+      return (
+        title.includes(search) || 
+        description.includes(search) || 
+        category.includes(search) ||
+        (product.id?.toString() || "").includes(search)
+      );
+    })
+    // Sonra sırala
+    .sort((a, b) => {
+      const fieldA = a[sortField];
+      const fieldB = b[sortField];
+      
+      // Özel durumlar için kontrol
+      if (sortField === "category_id") {
+        const catA = getCategoryName(a.category_id);
+        const catB = getCategoryName(b.category_id);
+        
+        if (sortDirection === "asc") {
+          return catA.localeCompare(catB);
+        } else {
+          return catB.localeCompare(catA);
+        }
+      }
+      
+      // Genel sıralama mantığı
+      if (typeof fieldA === "string" && typeof fieldB === "string") {
+        // String sıralama
+        if (sortDirection === "asc") {
+          return fieldA.localeCompare(fieldB);
+        } else {
+          return fieldB.localeCompare(fieldA);
+        }
+      } else {
+        // Sayısal veya diğer tipler için
+        if (sortDirection === "asc") {
+          return fieldA > fieldB ? 1 : -1;
+        } else {
+          return fieldA < fieldB ? 1 : -1;
+        }
+      }
+    });
+
   return (
     <div className="p-6 bg-gray-50">
       <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
@@ -461,6 +533,32 @@ export default function ProductsAdmin() {
           {error}
         </div>
       )}
+      
+      {/* Arama Çubuğu */}
+      <div className="mb-4 bg-white p-4 rounded-lg shadow-sm">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FaSearch className="text-blue-500" />
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Ürün ara... (Ad, açıklama, kategori veya ID)"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 placeholder-gray-500"
+          />
+          {searchTerm && (
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         {loading && !showModal && (
@@ -474,14 +572,29 @@ export default function ProductsAdmin() {
           <table className="w-full">
             <thead className="bg-gray-100">
               <tr>
-                <th className="py-3 px-4 text-left text-gray-700">ID</th>
-                <th className="py-3 px-4 text-left text-gray-700">Ürün Adı</th>
-                <th className="py-3 px-4 text-left text-gray-700">Kategori</th>
+                <th 
+                  className="py-3 px-4 text-left text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort("id")}
+                >
+                  ID {sortField === "id" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th 
+                  className="py-3 px-4 text-left text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort("title")}
+                >
+                  Ürün Adı {sortField === "title" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th 
+                  className="py-3 px-4 text-left text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort("category_id")}
+                >
+                  Kategori {sortField === "category_id" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
                 <th className="py-3 px-4 text-right text-gray-700">İşlemler</th>
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {filteredAndSortedProducts.map((product) => (
                 <tr key={product.id} className="border-t border-gray-200">
                   <td className="py-3 px-4 text-gray-800">{product.id}</td>
                   <td className="py-3 px-4 text-gray-800 font-medium">{product.title}</td>
@@ -512,6 +625,13 @@ export default function ProductsAdmin() {
                 <tr>
                   <td colSpan={4} className="py-4 text-center text-gray-500">
                     Henüz ürün bulunmuyor.
+                  </td>
+                </tr>
+              )}
+              {products.length > 0 && filteredAndSortedProducts.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-4 text-center text-gray-500">
+                    Arama kriterine uyan ürün bulunamadı.
                   </td>
                 </tr>
               )}

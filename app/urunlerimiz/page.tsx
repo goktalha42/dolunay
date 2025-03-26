@@ -50,7 +50,7 @@ export default function ProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/admin/categories");
+      const response = await fetch("/api/admin/categories?onlyWithProducts=true");
       if (!response.ok) {
         throw new Error('Kategoriler getirilemedi');
       }
@@ -451,149 +451,204 @@ export default function ProductsPage() {
             <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-4 text-gray-800">Kategoriler</h3>
-                <ul className="space-y-2">
-                  <li>
-                    <button 
-                      onClick={() => setSelectedCategory(null)}
-                      className={`w-full text-left py-1 ${selectedCategory === null ? 'font-semibold text-blue-600' : 'text-gray-700'}`}
-                    >
-                      Tüm Ürünler
-                    </button>
-                  </li>
+                <div className="space-y-1">
+                  <button 
+                    onClick={() => setSelectedCategory(null)}
+                    className={`w-full text-left py-2 px-3 rounded-md transition-colors ${
+                      selectedCategory === null 
+                        ? 'bg-blue-500 text-white font-medium' 
+                        : 'hover:bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    Tüm Ürünler
+                  </button>
+                  
                   {mainCategories.map(category => (
-                    <li key={category.id} className="py-1">
-                      <div className="flex items-center">
-                        {hasChildren(category.id) && (
-                          <button 
-                            onClick={(e) => toggleCategoryExpansion(category.id, e)}
-                            className="mr-1 text-gray-500 focus:outline-none p-1"
-                          >
-                            {expandedCategories.includes(category.id) ? 
-                              <FaChevronDown size={12} /> : 
-                              <FaChevronRight size={12} />
-                            }
-                          </button>
-                        )}
+                    <div key={category.id} className="category-item">
+                      <div className="category-header">
                         <button 
                           onClick={() => setSelectedCategory(category.id)}
-                          className={`flex-grow text-left ${selectedCategory === category.id ? 'font-semibold text-blue-600' : 'text-gray-700'}`}
+                          className={`group flex items-center w-full text-left py-2 px-3 rounded-md transition-colors ${
+                            selectedCategory === category.id 
+                              ? 'bg-blue-500 text-white font-medium' 
+                              : 'hover:bg-gray-100 text-gray-700'
+                          }`}
                         >
-                          {category.name}
-                          {hasChildren(category.id) && !expandedCategories.includes(category.id) && (
-                            <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-1 py-0.5 rounded-sm">(Alt)</span>
+                          <span className="flex-grow">{category.name}</span>
+                          {hasChildren(category.id) && (
+                            <button 
+                              onClick={(e) => toggleCategoryExpansion(category.id, e)}
+                              className={`ml-2 p-1 rounded-full transition-colors ${
+                                selectedCategory === category.id 
+                                  ? 'text-white group-hover:bg-blue-600' 
+                                  : 'text-gray-500 group-hover:bg-gray-200'
+                              }`}
+                            >
+                              {expandedCategories.includes(category.id) ? 
+                                <FaChevronDown size={12} /> : 
+                                <FaChevronRight size={12} />
+                              }
+                            </button>
                           )}
                         </button>
                       </div>
                       
                       {/* Alt Kategoriler */}
                       {hasChildren(category.id) && expandedCategories.includes(category.id) && (
-                        <ul className="ml-6 mt-2 space-y-1 border-l-2 border-gray-200 pl-2">
+                        <div className="ml-3 mt-1 pl-3 border-l-2 border-gray-200">
                           {getChildCategories(category.id).map(child => (
-                            <li key={child.id} className="py-1">
-                              <div className="flex items-center">
-                                {hasChildren(child.id) && (
-                                  <button 
-                                    onClick={(e) => toggleCategoryExpansion(child.id, e)}
-                                    className="mr-1 text-gray-500 focus:outline-none p-1"
-                                  >
-                                    {expandedCategories.includes(child.id) ? 
-                                      <FaChevronDown size={12} /> : 
-                                      <FaChevronRight size={12} />
-                                    }
-                                  </button>
-                                )}
+                            <div key={child.id} className="subcategory-item">
+                              <div className="subcategory-header">
                                 <button 
                                   onClick={() => setSelectedCategory(child.id)}
-                                  className={`flex-grow text-left ${selectedCategory === child.id ? 'font-semibold text-blue-600' : 'text-gray-600'}`}
+                                  className={`group flex items-center w-full text-left py-2 px-3 rounded-md transition-colors ${
+                                    selectedCategory === child.id 
+                                      ? 'bg-blue-500 text-white font-medium' 
+                                      : 'hover:bg-gray-100 text-gray-600'
+                                  }`}
                                 >
-                                  {child.name}
-                                  {hasChildren(child.id) && !expandedCategories.includes(child.id) && (
-                                    <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-1 py-0.5 rounded-sm">(Alt)</span>
+                                  <span className="flex-grow">{child.name}</span>
+                                  {hasChildren(child.id) && (
+                                    <button 
+                                      onClick={(e) => toggleCategoryExpansion(child.id, e)}
+                                      className={`ml-2 p-1 rounded-full transition-colors ${
+                                        selectedCategory === child.id 
+                                          ? 'text-white group-hover:bg-blue-600' 
+                                          : 'text-gray-500 group-hover:bg-gray-200'
+                                      }`}
+                                    >
+                                      {expandedCategories.includes(child.id) ? 
+                                        <FaChevronDown size={12} /> : 
+                                        <FaChevronRight size={12} />
+                                      }
+                                    </button>
                                   )}
                                 </button>
                               </div>
                               
                               {/* 3. Seviye Kategoriler */}
                               {hasChildren(child.id) && expandedCategories.includes(child.id) && (
-                                <ul className="ml-6 mt-1 space-y-1 border-l-2 border-gray-200 pl-2">
+                                <div className="ml-3 mt-1 pl-3 border-l-2 border-gray-200">
                                   {getChildCategories(child.id).map(grandchild => (
-                                    <li key={grandchild.id}>
-                                      <button 
-                                        onClick={() => setSelectedCategory(grandchild.id)}
-                                        className={`w-full text-left py-1 ${selectedCategory === grandchild.id ? 'font-semibold text-blue-600' : 'text-gray-500'}`}
-                                      >
-                                        {grandchild.name}
-                                      </button>
-                                    </li>
+                                    <button 
+                                      key={grandchild.id}
+                                      onClick={() => setSelectedCategory(grandchild.id)}
+                                      className={`w-full text-left py-2 px-3 rounded-md transition-colors ${
+                                        selectedCategory === grandchild.id 
+                                          ? 'bg-blue-500 text-white font-medium' 
+                                          : 'hover:bg-gray-100 text-gray-500'
+                                      }`}
+                                    >
+                                      {grandchild.name}
+                                    </button>
                                   ))}
-                                </ul>
+                                </div>
                               )}
-                            </li>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       )}
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
               
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-4 text-gray-800">Segment</h3>
                 <div className="space-y-2">
-                  <div>
-                    <label className="inline-flex items-center">
-                      <input 
-                        type="radio" 
-                        name="segment" 
-                        checked={selectedSegment === null} 
-                        onChange={() => setSelectedSegment(null)}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      <span className="ml-2 text-gray-700">Tümü</span>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="inline-flex items-center">
-                      <input 
-                        type="radio" 
-                        name="segment" 
-                        checked={selectedSegment === 'başlangıç'} 
-                        onChange={() => setSelectedSegment('başlangıç')}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      <span className="ml-2 text-gray-700">Başlangıç</span>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="inline-flex items-center">
-                      <input 
-                        type="radio" 
-                        name="segment" 
-                        checked={selectedSegment === 'orta'} 
-                        onChange={() => setSelectedSegment('orta')}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      <span className="ml-2 text-gray-700">Orta</span>
-                    </label>
-                  </div>
-                  <div>
-                    <label className="inline-flex items-center">
-                      <input 
-                        type="radio" 
-                        name="segment" 
-                        checked={selectedSegment === 'üst'} 
-                        onChange={() => setSelectedSegment('üst')}
-                        className="h-4 w-4 text-blue-600"
-                      />
-                      <span className="ml-2 text-gray-700">Üst</span>
-                    </label>
-                  </div>
+                  <label className={`block p-2 rounded-md cursor-pointer transition-colors ${
+                    selectedSegment === null 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}>
+                    <input 
+                      type="radio" 
+                      name="segment" 
+                      checked={selectedSegment === null} 
+                      onChange={() => setSelectedSegment(null)}
+                      className="hidden"
+                    />
+                    <span className="flex items-center">
+                      <span className={`inline-block w-4 h-4 mr-2 rounded-full ${
+                        selectedSegment === null 
+                          ? 'bg-white border-2 border-white' 
+                          : 'border-2 border-gray-400'
+                      }`}></span>
+                      Tümü
+                    </span>
+                  </label>
+                  
+                  <label className={`block p-2 rounded-md cursor-pointer transition-colors ${
+                    selectedSegment === 'başlangıç' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}>
+                    <input 
+                      type="radio" 
+                      name="segment" 
+                      checked={selectedSegment === 'başlangıç'} 
+                      onChange={() => setSelectedSegment('başlangıç')}
+                      className="hidden"
+                    />
+                    <span className="flex items-center">
+                      <span className={`inline-block w-4 h-4 mr-2 rounded-full ${
+                        selectedSegment === 'başlangıç' 
+                          ? 'bg-white border-2 border-white' 
+                          : 'border-2 border-gray-400'
+                      }`}></span>
+                      Başlangıç
+                    </span>
+                  </label>
+                  
+                  <label className={`block p-2 rounded-md cursor-pointer transition-colors ${
+                    selectedSegment === 'orta' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}>
+                    <input 
+                      type="radio" 
+                      name="segment" 
+                      checked={selectedSegment === 'orta'} 
+                      onChange={() => setSelectedSegment('orta')}
+                      className="hidden"
+                    />
+                    <span className="flex items-center">
+                      <span className={`inline-block w-4 h-4 mr-2 rounded-full ${
+                        selectedSegment === 'orta' 
+                          ? 'bg-white border-2 border-white' 
+                          : 'border-2 border-gray-400'
+                      }`}></span>
+                      Orta
+                    </span>
+                  </label>
+                  
+                  <label className={`block p-2 rounded-md cursor-pointer transition-colors ${
+                    selectedSegment === 'üst' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}>
+                    <input 
+                      type="radio" 
+                      name="segment" 
+                      checked={selectedSegment === 'üst'} 
+                      onChange={() => setSelectedSegment('üst')}
+                      className="hidden"
+                    />
+                    <span className="flex items-center">
+                      <span className={`inline-block w-4 h-4 mr-2 rounded-full ${
+                        selectedSegment === 'üst' 
+                          ? 'bg-white border-2 border-white' 
+                          : 'border-2 border-gray-400'
+                      }`}></span>
+                      Üst
+                    </span>
+                  </label>
                 </div>
               </div>
               
               <button 
                 onClick={resetFilters}
-                className="w-full py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors"
+                className="w-full py-2 px-4 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 Filtreleri Temizle
               </button>

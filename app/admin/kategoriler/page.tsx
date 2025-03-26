@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 
 interface Category {
   id: number;
@@ -20,6 +20,13 @@ export default function CategoryAdmin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Sıralama için state ekleyelim
+  const [sortField, setSortField] = useState<string>("id");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  // Arama için state ekleyelim
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Kategorileri getir
   const fetchCategories = async () => {
@@ -169,6 +176,72 @@ export default function CategoryAdmin() {
     return parent ? parent.name : "Bilinmeyen Kategori";
   };
 
+  // Sıralama fonksiyonu
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      // Aynı alana tekrar tıklandığında sıralama yönünü değiştir
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      // Farklı bir alana tıklandığında, o alanı sırala ve varsayılan olarak artan sırala
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Sıralanmış ve filtrelenmiş kategorileri hesapla
+  const filteredAndSortedCategories = [...categories]
+    // Önce arama terimine göre filtrele
+    .filter(category => {
+      if (!searchTerm.trim()) return true;
+      
+      const search = searchTerm.toLowerCase().trim();
+      const name = category.name?.toLowerCase() || "";
+      const parentName = getParentCategoryName(category.parent_id)?.toLowerCase() || "";
+      
+      return (
+        name.includes(search) || 
+        parentName.includes(search) || 
+        (category.id?.toString() || "").includes(search)
+      );
+    })
+    // Sonra sırala
+    .sort((a, b) => {
+      const fieldA = a[sortField as keyof Category];
+      const fieldB = b[sortField as keyof Category];
+      
+      // Özel durumlar için kontrol
+      if (sortField === "parent_id") {
+        const parentA = getParentCategoryName(a.parent_id);
+        const parentB = getParentCategoryName(b.parent_id);
+        
+        if (sortDirection === "asc") {
+          return parentA.localeCompare(parentB);
+        } else {
+          return parentB.localeCompare(parentA);
+        }
+      }
+      
+      // Genel sıralama mantığı
+      if (typeof fieldA === "string" && typeof fieldB === "string") {
+        // String sıralama
+        if (sortDirection === "asc") {
+          return fieldA.localeCompare(fieldB);
+        } else {
+          return fieldB.localeCompare(fieldA);
+        }
+      } else {
+        // Sayısal veya diğer tipler için
+        if (fieldA === null) return sortDirection === "asc" ? -1 : 1;
+        if (fieldB === null) return sortDirection === "asc" ? 1 : -1;
+        
+        if (sortDirection === "asc") {
+          return fieldA > fieldB ? 1 : -1;
+        } else {
+          return fieldA < fieldB ? 1 : -1;
+        }
+      }
+    });
+
   // Kategorileri hiyerarşik olarak görüntüle
   const mainCategories = categories.filter(cat => cat.parent_id === null);
   
@@ -201,6 +274,32 @@ export default function CategoryAdmin() {
           {error}
         </div>
       )}
+      
+      {/* Arama Çubuğu */}
+      <div className="mb-4 bg-white p-4 rounded-lg shadow-sm">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FaSearch className="text-blue-500" />
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Kategori ara... (Ad, üst kategori veya ID)"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-50 text-gray-800 placeholder-gray-500"
+          />
+          {searchTerm && (
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Kategori Listesi */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -215,14 +314,29 @@ export default function CategoryAdmin() {
           <table className="w-full">
             <thead className="bg-gray-100">
               <tr>
-                <th className="py-3 px-4 text-left text-gray-700">ID</th>
-                <th className="py-3 px-4 text-left text-gray-700">Kategori Adı</th>
-                <th className="py-3 px-4 text-left text-gray-700">Üst Kategori</th>
+                <th 
+                  className="py-3 px-4 text-left text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort("id")}
+                >
+                  ID {sortField === "id" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th 
+                  className="py-3 px-4 text-left text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort("name")}
+                >
+                  Kategori Adı {sortField === "name" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
+                <th 
+                  className="py-3 px-4 text-left text-gray-700 cursor-pointer hover:bg-gray-200"
+                  onClick={() => handleSort("parent_id")}
+                >
+                  Üst Kategori {sortField === "parent_id" && (sortDirection === "asc" ? "↑" : "↓")}
+                </th>
                 <th className="py-3 px-4 text-right text-gray-700">İşlemler</th>
               </tr>
             </thead>
             <tbody>
-              {categories.map((category) => (
+              {filteredAndSortedCategories.map((category) => (
                 <tr key={category.id} className="border-t border-gray-200">
                   <td className="py-3 px-4 text-gray-800">{category.id}</td>
                   <td className="py-3 px-4 text-gray-800 font-medium">
@@ -255,6 +369,13 @@ export default function CategoryAdmin() {
                 <tr>
                   <td colSpan={4} className="py-4 text-center text-gray-500">
                     Henüz kategori bulunmuyor.
+                  </td>
+                </tr>
+              )}
+              {categories.length > 0 && filteredAndSortedCategories.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-4 text-center text-gray-500">
+                    Arama kriterine uyan kategori bulunamadı.
                   </td>
                 </tr>
               )}

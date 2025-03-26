@@ -456,7 +456,7 @@ export async function deleteProduct(id: number): Promise<boolean> {
   }
 }
 
-// Kategori işlemleri
+// Kategorileri getir
 export async function getCategories(): Promise<Category[]> {
   try {
     const db = await getDatabase();
@@ -465,5 +465,180 @@ export async function getCategories(): Promise<Category[]> {
   } catch (error) {
     console.error('Kategoriler getirme hatası:', error);
     return [];
+  }
+}
+
+// İçinde ürün olan kategorileri getir
+export async function getCategoriesWithProducts(): Promise<Category[]> {
+  try {
+    const db = await getDatabase();
+    
+    // Tüm kategorileri getir
+    const [allCategories] = await db.query('SELECT * FROM categories ORDER BY parent_id, name');
+    const categories = allCategories as Category[];
+    
+    // Her kategori için ürün sayısını getir
+    const [productCounts] = await db.query(`
+      SELECT c.id, COUNT(p.id) as product_count
+      FROM categories c
+      LEFT JOIN products p ON c.id = p.category_id
+      GROUP BY c.id
+    `);
+    
+    const categoryProductCounts = (productCounts as any[]).reduce((acc, row) => {
+      acc[row.id] = row.product_count;
+      return acc;
+    }, {} as Record<number, number>);
+    
+    // Alt kategorilerdeki ürünleri de ana kategoriye ekle
+    const categoryWithChildren: Record<number, number[]> = {};
+    
+    // Kategori hiyerarşisini oluştur
+    categories.forEach(category => {
+      if (category.parent_id !== null) {
+        if (!categoryWithChildren[category.parent_id]) {
+          categoryWithChildren[category.parent_id] = [];
+        }
+        categoryWithChildren[category.parent_id].push(category.id);
+      }
+    });
+    
+    // Kategori ağacını takip ederek alt kategorilerdeki ürünleri ana kategoriye ekle
+    const getCategoryProductCount = (categoryId: number): number => {
+      let count = categoryProductCounts[categoryId] || 0;
+      
+      const childCategories = categoryWithChildren[categoryId] || [];
+      for (const childId of childCategories) {
+        count += getCategoryProductCount(childId);
+      }
+      
+      return count;
+    };
+    
+    // İçinde ürün olmayan kategorileri filtrele
+    const categoriesWithProducts = categories.filter(category => {
+      const totalProductCount = getCategoryProductCount(category.id);
+      return totalProductCount > 0;
+    });
+    
+    return categoriesWithProducts;
+  } catch (error) {
+    console.error('Ürünlü kategoriler getirme hatası:', error);
+    return [];
+  }
+}
+
+// Kategori işlemleri
+
+// Kategori getir (ID'ye göre)
+export async function getCategoryById(id: number): Promise<Category | null> {
+  try {
+    const db = await getDatabase();
+    const [rows] = await db.query('SELECT * FROM categories WHERE id = ?', [id]);
+    const categories = rows as Category[];
+    return categories.length > 0 ? categories[0] : null;
+  } catch (error) {
+    console.error(`getCategoryById(${id}): Hata:`, error);
+    return null;
+  }
+}
+
+// Kategori ekle
+export async function addCategory(categoryData: Omit<Category, 'id'>): Promise<Category | null> {
+  try {
+    const db = await getDatabase();
+    
+    const [result] = await db.query(
+      'INSERT INTO categories (name, parent_id) VALUES (?, ?)',
+      [categoryData.name, categoryData.parent_id]
+    );
+    
+    const insertResult = result as any;
+    const categoryId = insertResult.insertId;
+    
+    // Yeni eklenen kategoriyi getir
+    return await getCategoryById(categoryId);
+  } catch (error) {
+    console.error('addCategory:', error);
+    return null;
+  }
+}
+
+// Kategori güncelle
+export async function updateCategory(id: number, categoryData: Partial<Omit<Category, 'id'>>): Promise<Category | null> {
+  try {
+    const db = await getDatabase();
+    
+    const updateFields = [];
+    const updateValues = [];
+    
+    if (categoryData.name !== undefined) {
+      updateFields.push('name = ?');
+      updateValues.push(categoryData.name);
+    }
+    
+    if (categoryData.parent_id !== undefined) {
+      updateFields.push('parent_id = ?');
+      updateValues.push(categoryData.parent_id);
+    }
+    
+    if (updateFields.length === 0) {
+      // Güncellenecek alan yok, mevcut kategoriyi döndür
+      return await getCategoryById(id);
+    }
+    
+    // ID'yi son parametre olarak ekle
+    updateValues.push(id);
+    
+    await db.query(
+      `UPDATE categories SET ${updateFields.join(', ')} WHERE id = ?`,
+      updateValues
+    );
+    
+    // Güncellenmiş kategoriyi getir
+    return await getCategoryById(id);
+  } catch (error) {
+    console.error(`updateCategory(${id}):`, error);
+    return null;
+  }
+}
+
+// Kategori sil
+export async function deleteCategory(id: number): Promise<boolean> {
+  try {
+    const db = await getDatabase();
+    
+    // Önce bu kategorideki alt kategorileri kontrol et
+    const [subCategories] = await db.query(
+      'SELECT COUNT(*) as count FROM categories WHERE parent_id = ?', 
+      [id]
+    );
+    
+    const subCategoriesCount = (subCategories as any[])[0].count;
+    if (subCategoriesCount > 0) {
+      console.log(`deleteCategory(${id}): Alt kategoriler var, silinemez.`);
+      return false;
+    }
+    
+    // Bu kategoriye ait ürünleri kontrol et
+    const [products] = await db.query(
+      'SELECT COUNT(*) as count FROM products WHERE category_id = ?', 
+      [id]
+    );
+    
+    const productsCount = (products as any[])[0].count;
+    if (productsCount > 0) {
+      console.log(`deleteCategory(${id}): Ürünler var, silinemez.`);
+      return false;
+    }
+    
+    // Kategoriyi sil
+    const [result] = await db.query('DELETE FROM categories WHERE id = ?', [id]);
+    const deleteResult = result as any;
+    
+    return deleteResult.affectedRows > 0;
+  } catch (error) {
+    console.error(`deleteCategory(${id}):`, error);
+    return false;
   }
 }
