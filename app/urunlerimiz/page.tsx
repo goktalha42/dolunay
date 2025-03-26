@@ -140,24 +140,81 @@ export default function ProductsPage() {
   const getImageUrl = (imageUrl: string) => {
     if (!imageUrl) return "/images/placeholder.jpg";
     
+    // İzin güvenliğini sağla - Sadece string değerleri kabul et
+    if (typeof imageUrl !== 'string') {
+      console.error("getImageUrl: Geçersiz imageUrl türü:", typeof imageUrl);
+      return "/images/placeholder.jpg";
+    }
+    
     // Eğer URL zaten http veya https ile başlıyorsa olduğu gibi döndür
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       return imageUrl;
     }
+    
     // Eğer URL / ile başlıyorsa, domain'in kök dizininden başlar
     if (imageUrl.startsWith('/')) {
       return imageUrl;
     }
+    
     // Aksi takdirde göreceli yol olarak değerlendir ve / ekle
     return `/${imageUrl}`;
   };
 
   // Tüm ürün resimlerini içeren diziyi oluştur (ana görsel + ek görseller)
   const getAllProductImages = (product: Product) => {
-    const images = [product.main_image];
-    if (product.additional_images && Array.isArray(product.additional_images)) {
-      images.push(...product.additional_images);
+    if (!product) {
+      console.error("getAllProductImages: Ürün nesnesi bulunamadı");
+      return [];
     }
+    
+    const images = [];
+    
+    // Ana görsel varsa ekle
+    if (product.main_image) {
+      images.push(product.main_image);
+      console.log("getAllProductImages: Ana görsel eklendi:", product.main_image);
+    }
+    
+    // Ham ek resimler verilerini kontrol et
+    console.log("getAllProductImages: Ham ürün.additional_images değeri:", 
+      typeof product.additional_images, 
+      product.additional_images
+    );
+    
+    // Ek resimleri işle
+    let additionalImages: string[] = [];
+    
+    // Eğer string ise parse et
+    if (typeof product.additional_images === 'string') {
+      try {
+        const parsed = JSON.parse(product.additional_images);
+        if (Array.isArray(parsed)) {
+          additionalImages = parsed;
+          console.log("getAllProductImages: String'den ek resimler parse edildi:", additionalImages);
+        } else {
+          console.error("getAllProductImages: Parse edilen değer dizi değil:", parsed);
+        }
+      } catch (e) {
+        console.error("getAllProductImages: Ek resimler parse hatası:", e);
+      }
+    }
+    // Eğer zaten dizi ise doğrudan kullan
+    else if (Array.isArray(product.additional_images)) {
+      additionalImages = [...product.additional_images];
+      console.log("getAllProductImages: Ek resimler zaten dizi:", additionalImages);
+    }
+    else {
+      console.error("getAllProductImages: Ek resimler geçerli bir format değil:", typeof product.additional_images);
+    }
+    
+    // Geçerli ek resimleri ekle
+    if (additionalImages.length > 0) {
+      const validImages = additionalImages.filter(img => typeof img === 'string' && img.trim() !== '');
+      console.log("getAllProductImages: Geçerli ek resim sayısı:", validImages.length);
+      images.push(...validImages);
+    }
+    
+    console.log("getAllProductImages: Toplam resim sayısı:", images.length);
     return images;
   };
 
@@ -633,26 +690,30 @@ export default function ProductsPage() {
                     }}
                   />
 
-                  {/* Gezinme Okları */}
-                  <button 
-                    onClick={prevImage}
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full text-gray-800 hover:bg-opacity-100"
-                    aria-label="Önceki resim"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
+                  {/* Gezinme Okları - Sadece birden fazla resim varsa göster */}
+                  {selectedProduct.additional_images && selectedProduct.additional_images.length > 0 && (
+                    <>
+                      <button 
+                        onClick={prevImage}
+                        className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full text-gray-800 hover:bg-opacity-100"
+                        aria-label="Önceki resim"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
 
-                  <button 
-                    onClick={nextImage}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full text-gray-800 hover:bg-opacity-100"
-                    aria-label="Sonraki resim"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
+                      <button 
+                        onClick={nextImage}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full text-gray-800 hover:bg-opacity-100"
+                        aria-label="Sonraki resim"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Küçük Resimler (Ana görsel + ek görseller) */}
@@ -669,30 +730,48 @@ export default function ProductsPage() {
                       sizes="(max-width: 768px) 20vw, 10vw"
                       className="object-contain"
                       onError={(e) => {
+                        console.error("Ana resim yüklenemedi:", selectedProduct.main_image);
                         (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
                       }}
                     />
                   </div>
 
                   {/* Ek görseller */}
-                  {selectedProduct.additional_images.map((image, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`relative h-20 border ${imageIndex === idx + 1 ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'} rounded-md cursor-pointer overflow-hidden`}
-                      onClick={() => selectImage(idx + 1)}
-                    >
-                      <Image
-                        src={getImageUrl(image)}
-                        alt={`${selectedProduct.title} - ${idx + 1}`}
-                        fill
-                        sizes="(max-width: 768px) 20vw, 10vw"
-                        className="object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
-                        }}
-                      />
-                    </div>
-                  ))}
+                  {selectedProduct.additional_images && 
+                   Array.isArray(selectedProduct.additional_images) && 
+                   selectedProduct.additional_images.length > 0 ? 
+                   selectedProduct.additional_images.map((image, idx) => {
+                      // Sadece geçerli string değerleri kabul et
+                      if (!image || typeof image !== 'string') {
+                        console.error("Geçersiz ek resim değeri:", idx, image);
+                        return null;
+                      }
+                      
+                      console.log("Ek resim gösteriliyor:", idx, image);
+                      
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`relative h-20 border ${imageIndex === idx + 1 ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'} rounded-md cursor-pointer overflow-hidden`}
+                          onClick={() => selectImage(idx + 1)}
+                        >
+                          <Image
+                            src={getImageUrl(image)}
+                            alt={`${selectedProduct.title} - ${idx + 1}`}
+                            fill
+                            sizes="(max-width: 768px) 20vw, 10vw"
+                            className="object-contain"
+                            onError={(e) => {
+                              console.error("Ek resim yüklenemedi:", image);
+                              (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
+                            }}
+                          />
+                        </div>
+                      );
+                    }) : (
+                      // Ek resim yoksa bilgi mesajı göstermeye gerek yok, seçili ürün için göstermek zorunda değiliz
+                      null
+                    )}
                 </div>
               </div>
 
@@ -703,13 +782,19 @@ export default function ProductsPage() {
                   <p className="text-gray-600">{selectedProduct.short_description}</p>
                 </div>
 
-                {selectedProduct.features && selectedProduct.features.length > 0 && (
+                {selectedProduct.features && Array.isArray(selectedProduct.features) && selectedProduct.features.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold mb-2 text-gray-800">Özellikler</h3>
                     <ul className="list-disc list-inside space-y-2">
-                      {selectedProduct.features.map((feature, index) => (
-                        <li key={index} className="text-gray-600">{feature}</li>
-                      ))}
+                      {selectedProduct.features.map((feature, index) => {
+                        if (!feature || typeof feature !== 'string') {
+                          console.error("Geçersiz özellik:", index, feature);
+                          return null;
+                        }
+                        return (
+                          <li key={index} className="text-gray-600">{feature}</li>
+                        );
+                      })}
                     </ul>
                   </div>
                 )}

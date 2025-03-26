@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProducts, addProduct, deleteProduct } from "@/lib/db";
+import { getProducts, addProduct, deleteProduct, Product } from "@/app/lib/db";
 import { writeFile } from "fs/promises";
 import path from "path";
 import { existsSync, mkdirSync } from "fs";
@@ -23,7 +23,23 @@ export async function POST(request: Request) {
     const short_description = formData.get("short_description") as string;
     const category_id = parseInt(formData.get("category_id") as string);
     const segment = formData.get("segment") as string;
-    const features = JSON.parse(formData.get("features") as string || "[]");
+    
+    // features değerini al ve parse et
+    let features: string[] = [];
+    const featuresStr = formData.get("features") as string;
+    
+    try {
+      if (featuresStr) {
+        const parsedFeatures = JSON.parse(featuresStr);
+        if (Array.isArray(parsedFeatures)) {
+          features = parsedFeatures;
+        }
+      }
+      console.log("Yeni ürün - Features parsed:", features);
+    } catch (e) {
+      console.error("Yeni ürün - Features parse error:", e);
+      features = [];
+    }
     
     // Resim dosyalarını al
     const mainImageFile = formData.get("main_image_file") as File | null;
@@ -40,7 +56,7 @@ export async function POST(request: Request) {
     }
 
     // Ana resmi kaydet
-    let mainImagePath = '/images/products/default.jpg'; // Varsayılan resim
+    let mainImagePath = '/images/logo.png'; // Varsayılan resim logo olacak
     if (mainImageFile) {
       const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
       const filename = `${uniqueSuffix}-${mainImageFile.name.replace(/\s+/g, '-')}`;
@@ -64,6 +80,9 @@ export async function POST(request: Request) {
       
       additionalImagePaths.push(`/images/products/${filename}`);
     }
+    
+    console.log("Eklenen ek resim sayısı:", additionalImageFiles.length);
+    console.log("Eklenen ek resim yolları:", additionalImagePaths);
 
     const newProduct = await addProduct({
       title: title.trim(),
@@ -74,11 +93,24 @@ export async function POST(request: Request) {
       additional_images: additionalImagePaths,
       features,
     });
+    
+    console.log("Yeni eklenen ürün bilgileri:", {
+      id: newProduct.id,
+      title: newProduct.title,
+      main_image: newProduct.main_image,
+      additional_images_count: additionalImagePaths.length,
+      additional_images: additionalImagePaths
+    });
 
     return NextResponse.json(newProduct);
   } catch (error) {
     console.error("Ürün eklenirken hata:", error);
-    return NextResponse.json({ error: "Ürün eklenemedi" }, { status: 500 });
+    // Hata mesajını daha detaylı gösterelim
+    const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata';
+    const errorStack = error instanceof Error ? error.stack : '';
+    console.error("Detaylı hata mesajı:", errorMessage);
+    console.error("Hata izlemesi:", errorStack);
+    return NextResponse.json({ error: "Ürün eklenemedi", details: errorMessage }, { status: 500 });
   }
 }
 

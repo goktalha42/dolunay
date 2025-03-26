@@ -1,18 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaPlus, FaEdit, FaTrash, FaImage } from "react-icons/fa";
 import Image from "next/image";
 
 interface Product {
-  id: number;
+  id?: number;
   title: string;
-  short_description: string;
-  category_id: number;
-  segment: string;
-  main_image: string;
-  additional_images: string[];
-  features: string[];
+  short_description?: string;
+  category_id?: number;
+  category_name?: string;
+  segment?: string;
+  image?: string;
+  main_image?: string;
+  additional_images?: string[] | string;
+  features?: string[] | string;
+  [key: string]: any; // Diğer olası alanlar için
 }
 
 interface Category {
@@ -29,6 +32,7 @@ interface FormDataType {
   main_image: string;
   additional_images: string[];
   features: string[];
+  [key: string]: any; // Diğer olası alanlar için
 }
 
 export default function ProductsAdmin() {
@@ -55,6 +59,10 @@ export default function ProductsAdmin() {
   const [additionalImageFiles, setAdditionalImageFiles] = useState<File[]>([]);
   const [mainImagePreview, setMainImagePreview] = useState<string>("");
   const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
+  const [existingAdditionalImages, setExistingAdditionalImages] = useState<string[]>([]);
+
+  // useRef için ana görsel input referansı ekleyelim
+  const mainImageRef = useRef<HTMLInputElement>(null);
 
   // Ürünleri getir
   const fetchProducts = async () => {
@@ -113,7 +121,14 @@ export default function ProductsAdmin() {
     // Metin verilerini ekle
     Object.entries(formData).forEach(([key, value]) => {
       if (key === "features") {
-        formDataToSend.append(key, JSON.stringify(value));
+        // Features dizisinin doğru şekilde gönderildiğinden emin ol
+        if (Array.isArray(value)) {
+          formDataToSend.append(key, JSON.stringify(value));
+          console.log("Features formData'ya eklendi:", JSON.stringify(value));
+        } else {
+          formDataToSend.append(key, JSON.stringify([]));
+          console.error("Features dizi değil:", value);
+        }
       } else if (key !== "main_image" && key !== "additional_images") {
         // Resim yolları form data'dan çıkarılıyor, bunun yerine dosyalar gönderilecek
         formDataToSend.append(key, String(value));
@@ -123,6 +138,9 @@ export default function ProductsAdmin() {
     // Ana resim dosyasını ekle
     if (mainImageFile) {
       formDataToSend.append("main_image_file", mainImageFile);
+    } else if (formData.main_image === "/images/logo.png") {
+      // Eğer ana resim yoksa ve logo kullanılacaksa
+      formDataToSend.append("main_image_default", "true");
     }
     
     // Ek resim dosyalarını ekle
@@ -130,9 +148,16 @@ export default function ProductsAdmin() {
       formDataToSend.append("additional_image_files", file);
     });
     
-    // Güncelleme yaparken mevcut ek resimleri koru
-    if (selectedProduct && selectedProduct.additional_images && selectedProduct.additional_images.length > 0) {
+    // Güncelleme yaparken mevcut ek resimleri koru - her zaman gönderiyoruz çünkü
+    // üründe ek resimler varsa ve selectedProduct ayarlanmışsa, bunun anlamı ürün düzenleme modundayız
+    if (selectedProduct) {
       formDataToSend.append("keep_existing_additional_images", "true");
+      
+      if (selectedProduct.additional_images && Array.isArray(selectedProduct.additional_images) && selectedProduct.additional_images.length > 0) {
+        console.log("Mevcut ek resimler korunuyor:", selectedProduct.additional_images);
+      } else {
+        console.log("Ek resim yok veya boş dizi, ama keep_existing_additional_images yine de true olarak gönderiliyor");
+      }
     }
     
     try {
@@ -158,8 +183,8 @@ export default function ProductsAdmin() {
           setSuccess('');
         }, 3000);
       } else {
-        const error = await response.json();
-        throw new Error(error.error || 'Bir hata oluştu');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Bir hata oluştu');
       }
     } catch (error: any) {
       console.error("Ürün kaydedilirken hata:", error);
@@ -169,7 +194,13 @@ export default function ProductsAdmin() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number | undefined) => {
+    if (!id) {
+      console.error("Geçersiz ürün ID'si:", id);
+      setError("Silinecek ürün bulunamadı.");
+      return;
+    }
+    
     if (!confirm("Bu ürünü silmek istediğinize emin misiniz?")) {
       return;
     }
@@ -190,6 +221,9 @@ export default function ProductsAdmin() {
         setTimeout(() => {
           setSuccess('');
         }, 3000);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Bir hata oluştu');
       }
     } catch (error: any) {
       console.error("Ürün silinirken hata:", error);
@@ -214,24 +248,92 @@ export default function ProductsAdmin() {
     setAdditionalImageFiles([]);
     setMainImagePreview("");
     setAdditionalImagePreviews([]);
+    setExistingAdditionalImages([]);
   };
 
   const handleProductEdit = (product: Product) => {
+    console.log("Düzenlenecek ürün:", product);
+
+    // Ek resimler ve özellikler için doğrulama ve dönüşüm
+    let validAdditionalImages: string[] = [];
+    if (product.additional_images) {
+      console.log("Ek resimler tipi:", typeof product.additional_images);
+      console.log("Ek resimler değeri:", product.additional_images);
+      
+      try {
+        // Eğer string ise JSON olarak parse et
+        if (typeof product.additional_images === 'string' && product.additional_images.trim() !== '') {
+          validAdditionalImages = JSON.parse(product.additional_images as string);
+        } 
+        // Eğer zaten array ise doğrudan kullan
+        else if (Array.isArray(product.additional_images)) {
+          validAdditionalImages = product.additional_images;
+        }
+        
+        console.log("İşlenmiş ek resimler:", validAdditionalImages);
+      } catch (error) {
+        console.error("Ek resimler parse hatası:", error);
+        validAdditionalImages = [];
+      }
+    }
+
+    let validFeatures: string[] = [];
+    if (product.features) {
+      console.log("Özellikler tipi:", typeof product.features);
+      console.log("Özellikler değeri:", product.features);
+      
+      try {
+        // Eğer string ise JSON olarak parse et
+        if (typeof product.features === 'string' && product.features.trim() !== '') {
+          validFeatures = JSON.parse(product.features as string);
+        } 
+        // Eğer zaten array ise doğrudan kullan
+        else if (Array.isArray(product.features)) {
+          validFeatures = product.features;
+        }
+        
+        console.log("İşlenmiş özellikler:", validFeatures);
+      } catch (error) {
+        console.error("Özellikler parse hatası:", error);
+        validFeatures = [];
+      }
+    }
+
+    // Form verilerini ayarla
     setSelectedProduct(product);
-    setFormData({
-      title: product.title,
+    
+    // Hataları önlemek için objeyi ayrıştırıp ayarla
+    const updatedFormData: FormDataType = {
+      title: product.title || "",
       short_description: product.short_description || "",
       category_id: product.category_id || 0,
-      segment: product.segment || "başlangıç",
+      segment: product.segment || "orta",
       main_image: product.main_image || "",
-      additional_images: product.additional_images || [],
-      features: product.features || [],
-    });
+      additional_images: validAdditionalImages,
+      features: validFeatures
+    };
+    
+    setFormData(updatedFormData);
+    
+    // Ek resimleri görseller için hazırla
+    setExistingAdditionalImages(validAdditionalImages);
+    setAdditionalImagePreviews(validAdditionalImages.map((img: string) => getImageUrl(img)));
+    
+    // Ana görsel için önizleme ayarla
+    if (product.main_image) {
+      setMainImageFile(null); // Yeni bir dosya seçilmediği anlamına gelir
+      setMainImagePreview(getImageUrl(product.main_image));
+    } else {
+      setMainImageFile(null);
+      setMainImagePreview("");
+    }
+    
+    // Modal'ı göster
     setShowModal(true);
   };
 
-  const getCategoryName = (categoryId: number): string => {
-    if (!categories || !Array.isArray(categories)) {
+  const getCategoryName = (categoryId: number | undefined): string => {
+    if (!categoryId || !categories || !Array.isArray(categories)) {
       return "Kategorisiz";
     }
     
@@ -290,18 +392,44 @@ export default function ProductsAdmin() {
     });
   };
 
-  // Ana görsel sil fonksiyonu
+  // Ana görseli temizle
   const removeMainImage = () => {
+    console.log("Ana görsel siliniyor");
+    // FormData kullanmak yerine doğrudan state güncellemesi yapalım
     setMainImageFile(null);
     setMainImagePreview("");
-    if (selectedProduct) {
-      // Ürün düzenleme modundayken ana görseli sil
-      // Bu işlemle görsel yolu yerine default.jpg kullanılacak
-      setFormData({
-        ...formData,
-        main_image: "/images/products/default.jpg"
-      });
+    // Input alanını da temizleyelim
+    if (mainImageRef.current) {
+      mainImageRef.current.value = "";
     }
+  };
+
+  // Resim URL'sini doğru formata çevirme
+  const getImageUrl = (imageUrl: string) => {
+    if (!imageUrl) {
+      return "/images/placeholder.jpg";
+    }
+    
+    // İzin güvenliğini sağla - Sadece string değerleri kabul et
+    if (typeof imageUrl !== 'string') {
+      console.error("getImageUrl: Geçersiz imageUrl türü:", typeof imageUrl);
+      return "/images/placeholder.jpg";
+    }
+    
+    console.log("getImageUrl çağrıldı:", imageUrl);
+    
+    // Eğer URL zaten http veya https ile başlıyorsa olduğu gibi döndür
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    
+    // Eğer URL / ile başlıyorsa, domain'in kök dizininden başlar
+    if (imageUrl.startsWith('/')) {
+      return imageUrl;
+    }
+    
+    // Aksi takdirde göreceli yol olarak değerlendir ve / ekle
+    return `/${imageUrl}`;
   };
 
   return (
@@ -483,13 +611,14 @@ export default function ProductsAdmin() {
                   <div className="relative">
                     <input
                       type="file"
+                      ref={mainImageRef}
                       onChange={(e) => handleFileChange(e, 'main_image')}
                       accept="image/*"
-                      className="sr-only"
-                      id="main-image-upload"
+                      className="hidden"
+                      id="mainImageInput"
                     />
                     <label
-                      htmlFor="main-image-upload"
+                      htmlFor="mainImageInput"
                       className="cursor-pointer py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                     >
                       Resim Seç
@@ -501,7 +630,7 @@ export default function ProductsAdmin() {
                 </div>
                 
                 {/* Ana görsel önizleme */}
-                {(mainImagePreview || selectedProduct?.main_image) && (
+                {mainImagePreview && (
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-sm font-medium text-gray-700">Önizleme:</h4>
@@ -516,7 +645,7 @@ export default function ProductsAdmin() {
                     </div>
                     <div className="relative w-40 h-40 border border-gray-200 rounded-md overflow-hidden bg-white">
                       <Image
-                        src={mainImagePreview || selectedProduct?.main_image || "/images/placeholder.jpg"}
+                        src={mainImagePreview}
                         alt="Ana görsel önizleme"
                         fill
                         className="object-contain"
@@ -580,18 +709,33 @@ export default function ProductsAdmin() {
                       ))}
                       
                       {/* Mevcut ek resimlerin gösterimi (sadece düzenleme modunda) */}
-                      {selectedProduct?.additional_images && selectedProduct.additional_images.length > 0 && 
-                       additionalImagePreviews.length === 0 && 
-                       selectedProduct.additional_images.map((image, index) => (
-                        <div key={`existing-${index}`} className="relative w-20 h-20 border border-gray-200 rounded-md overflow-hidden bg-white">
-                          <Image
-                            src={image}
-                            alt={`Mevcut ek görsel ${index + 1}`}
-                            fill
-                            className="object-contain"
-                          />
+                      {(selectedProduct?.additional_images && Array.isArray(selectedProduct.additional_images) && selectedProduct.additional_images.length > 0) ? (
+                        <div className="col-span-4 mt-2 border-t border-gray-200 pt-2">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Mevcut Ek Görseller ({selectedProduct.additional_images.length}):</h5>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedProduct.additional_images.map((image, index) => {
+                              if (!image || typeof image !== 'string') {
+                                console.error("Geçersiz resim değeri:", index, image);
+                                return null;
+                              }
+                              return (
+                                <div key={`existing-${index}`} className="relative w-20 h-20 border border-gray-200 rounded-md overflow-hidden bg-white">
+                                  <Image
+                                    src={getImageUrl(image)}
+                                    alt={`Mevcut ek görsel ${index + 1}`}
+                                    fill
+                                    className="object-contain"
+                                    onError={(e) => {
+                                      console.error("Mevcut ek görsel yüklenemedi:", image);
+                                      (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      ))}
+                      ) : null}
                     </div>
                   </div>
                 )}
