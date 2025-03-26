@@ -357,14 +357,14 @@ export default function ProductsPage() {
                         >
                           {category.name}
                           {hasChildren(category.id) && !expandedCategories.includes(category.id) && (
-                            <span className="ml-2 text-xs text-gray-500">(Alt kategoriler)</span>
+                            <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-1 py-0.5 rounded-sm">(Alt)</span>
                           )}
                         </button>
                       </div>
                       
                       {/* Alt Kategoriler */}
                       {hasChildren(category.id) && expandedCategories.includes(category.id) && (
-                        <ul className="ml-4 mt-2 space-y-1">
+                        <ul className="ml-6 mt-2 space-y-1 border-l-2 border-gray-200 pl-2">
                           {getChildCategories(category.id).map(child => (
                             <li key={child.id} className="py-1">
                               <div className="flex items-center">
@@ -385,14 +385,14 @@ export default function ProductsPage() {
                                 >
                                   {child.name}
                                   {hasChildren(child.id) && !expandedCategories.includes(child.id) && (
-                                    <span className="ml-2 text-xs text-gray-500">(Alt kategoriler)</span>
+                                    <span className="ml-2 text-xs bg-gray-100 text-gray-500 px-1 py-0.5 rounded-sm">(Alt)</span>
                                   )}
                                 </button>
                               </div>
                               
                               {/* 3. Seviye Kategoriler */}
                               {hasChildren(child.id) && expandedCategories.includes(child.id) && (
-                                <ul className="ml-4 mt-1 space-y-1">
+                                <ul className="ml-6 mt-1 space-y-1 border-l-2 border-gray-200 pl-2">
                                   {getChildCategories(child.id).map(grandchild => (
                                     <li key={grandchild.id}>
                                       <button 
@@ -577,14 +577,16 @@ export default function ProductsPage() {
                   <p className="text-gray-600">{selectedProduct.short_description}</p>
                 </div>
 
-                <div>
-                  <h3 className="text-lg font-semibold mb-2 text-gray-800">Özellikler</h3>
-                  <ul className="list-disc list-inside space-y-2">
-                    {selectedProduct.features.map((feature, index) => (
-                      <li key={index} className="text-gray-600">{feature}</li>
-                    ))}
-                  </ul>
-                </div>
+                {selectedProduct.features && selectedProduct.features.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2 text-gray-800">Özellikler</h3>
+                    <ul className="list-disc list-inside space-y-2">
+                      {selectedProduct.features.map((feature, index) => (
+                        <li key={index} className="text-gray-600">{feature}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 <div>
                   <h3 className="text-lg font-semibold mb-2 text-gray-800">Kategori</h3>
