@@ -130,9 +130,9 @@ export default function ProductsAdmin() {
       if (key === "features") {
         // Features dizisinin doğru şekilde gönderildiğinden emin ol
         if (Array.isArray(value)) {
-          formDataToSend.append(key, JSON.stringify(value));
+        formDataToSend.append(key, JSON.stringify(value));
           console.log("Features formData'ya eklendi:", JSON.stringify(value));
-        } else {
+      } else {
           formDataToSend.append(key, JSON.stringify([]));
           console.error("Features dizi değil:", value);
         }
@@ -647,7 +647,7 @@ export default function ProductsAdmin() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-800">
                 {selectedProduct ? "Ürünü Düzenle" : "Yeni Ürün Ekle"}
-              </h2>
+            </h2>
               <button
                 onClick={() => {
                   setShowModal(false);
@@ -657,20 +657,20 @@ export default function ProductsAdmin() {
               >
                 ✕
               </button>
-            </div>
+              </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Ürün Adı */}
-              <div>
+                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Ürün Adı*
                 </label>
-                <input
-                  type="text"
-                  value={formData.title}
+                  <input
+                    type="text"
+                    value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
-                  required
+                    required
                 />
               </div>
 
@@ -684,46 +684,46 @@ export default function ProductsAdmin() {
                   onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
                   rows={3}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
-                />
-              </div>
+                  />
+                </div>
 
               {/* Kategori */}
-              <div>
+                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Kategori
                 </label>
-                <select
-                  value={formData.category_id}
+                  <select
+                    value={formData.category_id}
                   onChange={(e) => setFormData({ ...formData, category_id: Number(e.target.value) })}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
                 >
                   <option value="0">Kategori Seçin</option>
                   {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                    ))}
+                  </select>
+                </div>
 
               {/* Segment */}
-              <div>
+                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Segment
                 </label>
-                <select
-                  value={formData.segment}
+                  <select
+                    value={formData.segment}
                   onChange={(e) => setFormData({ ...formData, segment: e.target.value })}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
                 >
                   <option value="başlangıç">Başlangıç</option>
                   <option value="orta">Orta</option>
                   <option value="üst">Üst</option>
-                </select>
-              </div>
+                  </select>
+                </div>
 
               {/* Ana Görsel */}
-              <div>
+                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Ana Görsel
                 </label>
@@ -742,8 +742,8 @@ export default function ProductsAdmin() {
                       className="cursor-pointer py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                     >
                       Resim Seç
-                    </label>
-                  </div>
+                      </label>
+                    </div>
                   <div className="text-sm text-gray-500">
                     {mainImageFile ? mainImageFile.name : "Henüz resim seçilmedi"}
                   </div>
@@ -766,17 +766,17 @@ export default function ProductsAdmin() {
                     <div className="relative w-40 h-40 border border-gray-200 rounded-md overflow-hidden bg-white">
                       <Image
                         src={mainImagePreview}
-                        alt="Ana görsel önizleme"
+                          alt="Ana görsel önizleme"
                         fill
                         className="object-contain"
-                      />
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
               {/* Ek Görseller */}
-              <div>
+                <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Ek Görseller
                 </label>
@@ -795,8 +795,8 @@ export default function ProductsAdmin() {
                       className="cursor-pointer py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                     >
                       Resimler Seç
-                    </label>
-                  </div>
+                      </label>
+                    </div>
                   <div className="text-sm text-gray-500">
                     {additionalImageFiles.length > 0 
                       ? `${additionalImageFiles.length} resim seçildi` 
@@ -817,16 +817,16 @@ export default function ProductsAdmin() {
                             alt={`Ek görsel ${index + 1}`}
                             fill
                             className="object-contain"
-                          />
-                          <button
-                            type="button"
+                            />
+                            <button
+                              type="button"
                             onClick={() => removeAdditionalImage(index)}
                             className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
                       
                       {/* Mevcut ek resimlerin gösterimi (sadece düzenleme modunda) */}
                       {(selectedProduct?.additional_images && Array.isArray(selectedProduct.additional_images) && selectedProduct.additional_images.length > 0) ? (
@@ -856,33 +856,33 @@ export default function ProductsAdmin() {
                           </div>
                         </div>
                       ) : null}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
               {/* Özellikler */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Özellikler
                 </label>
-                <div className="space-y-2">
-                  {formData.features.map((feature, index) => (
+                  <div className="space-y-2">
+                    {formData.features.map((feature, index) => (
                     <div key={index} className="flex items-center">
-                      <input
-                        type="text"
-                        value={feature}
-                        onChange={(e) => {
+                        <input
+                          type="text"
+                          value={feature}
+                          onChange={(e) => {
                           const updatedFeatures = [...formData.features];
                           updatedFeatures[index] = e.target.value;
                           setFormData({ ...formData, features: updatedFeatures });
                         }}
                         className="flex-grow p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
                         placeholder="Örn: Su geçirmez"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
                           const updatedFeatures = [...formData.features];
                           updatedFeatures.splice(index, 1);
                           setFormData({ ...formData, features: updatedFeatures });
@@ -890,16 +890,16 @@ export default function ProductsAdmin() {
                         className="ml-2 p-2 text-red-600 hover:text-red-800"
                       >
                         ✕
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
                     onClick={() => setFormData({ ...formData, features: [...formData.features, ''] })}
                     className="py-1 px-3 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
                   >
                     + Özellik Ekle
-                  </button>
+                    </button>
                 </div>
               </div>
 

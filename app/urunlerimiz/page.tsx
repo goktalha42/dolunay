@@ -670,41 +670,41 @@ export default function ProductsPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
-                  <div
-                    key={product.id}
+            <div
+              key={product.id}
                     className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-200"
-                  >
-                    <div className="relative h-64">
-                      <Image
+            >
+              <div className="relative h-64">
+                <Image
                         src={getImageUrl(product.main_image)}
-                        alt={product.title}
-                        fill
+                  alt={product.title}
+                  fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        className="object-contain"
+                  className="object-contain"
                         onError={(e) => {
                           console.error("Resim yüklenemedi:", product.main_image);
                           (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
                         }}
-                      />
-                    </div>
-                    <div className="p-6">
+                />
+              </div>
+              <div className="p-6">
                       <h2 className="text-xl font-semibold mb-2 text-gray-800">{product.title}</h2>
-                      <p className="text-gray-600 mb-4">{product.short_description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">{product.category_name}</span>
-                        <button
-                          onClick={() => {
-                            setSelectedProduct(product);
-                            setShowModal(true);
-                          }}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                          Detaylar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <p className="text-gray-600 mb-4">{product.short_description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">{product.category_name}</span>
+                  <button
+                    onClick={() => {
+                      setSelectedProduct(product);
+                      setShowModal(true);
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Detaylar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
               </div>
             )}
           </div>
@@ -810,18 +810,18 @@ export default function ProductsPage() {
                           className={`relative h-20 border ${imageIndex === idx + 1 ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'} rounded-md cursor-pointer overflow-hidden`}
                           onClick={() => selectImage(idx + 1)}
                         >
-                          <Image
+                      <Image
                             src={getImageUrl(image)}
                             alt={`${selectedProduct.title} - ${idx + 1}`}
-                            fill
+                        fill
                             sizes="(max-width: 768px) 20vw, 10vw"
-                            className="object-contain"
+                        className="object-contain"
                             onError={(e) => {
                               console.error("Ek resim yüklenemedi:", image);
                               (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
                             }}
-                          />
-                        </div>
+                      />
+                    </div>
                       );
                     }) : (
                       // Ek resim yoksa bilgi mesajı göstermeye gerek yok, seçili ürün için göstermek zorunda değiliz
@@ -838,20 +838,20 @@ export default function ProductsPage() {
                 </div>
 
                 {selectedProduct.features && Array.isArray(selectedProduct.features) && selectedProduct.features.length > 0 && (
-                  <div>
+                <div>
                     <h3 className="text-lg font-semibold mb-2 text-gray-800">Özellikler</h3>
-                    <ul className="list-disc list-inside space-y-2">
+                  <ul className="list-disc list-inside space-y-2">
                       {selectedProduct.features.map((feature, index) => {
                         if (!feature || typeof feature !== 'string') {
                           console.error("Geçersiz özellik:", index, feature);
                           return null;
                         }
                         return (
-                          <li key={index} className="text-gray-600">{feature}</li>
+                      <li key={index} className="text-gray-600">{feature}</li>
                         );
                       })}
-                    </ul>
-                  </div>
+                  </ul>
+                </div>
                 )}
 
                 <div>

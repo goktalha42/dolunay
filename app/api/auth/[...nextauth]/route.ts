@@ -1,8 +1,9 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import type { NextAuthOptions } from "next-auth";
 
 // Basit Next-auth konfigürasyonu
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -23,6 +24,10 @@ export const authOptions = {
       }
     })
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 60, // 30 dakika (yarım saat)
+  },
   pages: {
     signIn: "/admin/giris",
   },
@@ -43,5 +48,5 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET || "dolunay-gizli-anahtar",
 };
 
-const handler = NextAuth(authOptions);
+export const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST }; 
