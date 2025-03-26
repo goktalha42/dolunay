@@ -32,11 +32,21 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
+  const [currentImage, setCurrentImage] = useState<string>("");
+  const [imageIndex, setImageIndex] = useState<number>(0);
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  // Seçili ürün değiştiğinde ana resmi güncelle
+  useEffect(() => {
+    if (selectedProduct && selectedProduct.main_image) {
+      setCurrentImage(selectedProduct.main_image);
+      setImageIndex(0);
+    }
+  }, [selectedProduct]);
 
   const fetchCategories = async () => {
     try {
@@ -124,6 +134,62 @@ export default function ProductsPage() {
   const resetFilters = () => {
     setSelectedCategory(null);
     setSelectedSegment(null);
+  };
+
+  // Resim URL'sini doğru formata çevirme
+  const getImageUrl = (imageUrl: string) => {
+    if (!imageUrl) return "/images/placeholder.jpg";
+    
+    // Eğer URL zaten http veya https ile başlıyorsa olduğu gibi döndür
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
+    }
+    // Eğer URL / ile başlıyorsa, domain'in kök dizininden başlar
+    if (imageUrl.startsWith('/')) {
+      return imageUrl;
+    }
+    // Aksi takdirde göreceli yol olarak değerlendir ve / ekle
+    return `/${imageUrl}`;
+  };
+
+  // Tüm ürün resimlerini içeren diziyi oluştur (ana görsel + ek görseller)
+  const getAllProductImages = (product: Product) => {
+    const images = [product.main_image];
+    if (product.additional_images && Array.isArray(product.additional_images)) {
+      images.push(...product.additional_images);
+    }
+    return images;
+  };
+
+  // Sonraki resme geç
+  const nextImage = () => {
+    if (!selectedProduct) return;
+    
+    const images = getAllProductImages(selectedProduct);
+    const newIndex = (imageIndex + 1) % images.length;
+    setImageIndex(newIndex);
+    setCurrentImage(images[newIndex]);
+  };
+
+  // Önceki resme geç
+  const prevImage = () => {
+    if (!selectedProduct) return;
+    
+    const images = getAllProductImages(selectedProduct);
+    const newIndex = (imageIndex - 1 + images.length) % images.length;
+    setImageIndex(newIndex);
+    setCurrentImage(images[newIndex]);
+  };
+
+  // Belirli bir resme tıklandığında onu ana görsel olarak ayarla
+  const selectImage = (index: number) => {
+    if (!selectedProduct) return;
+    
+    const images = getAllProductImages(selectedProduct);
+    if (index >= 0 && index < images.length) {
+      setImageIndex(index);
+      setCurrentImage(images[index]);
+    }
   };
 
   return (
@@ -498,10 +564,15 @@ export default function ProductsPage() {
                   >
                     <div className="relative h-64">
                       <Image
-                        src={product.main_image}
+                        src={getImageUrl(product.main_image)}
                         alt={product.title}
                         fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-contain"
+                        onError={(e) => {
+                          console.error("Resim yüklenemedi:", product.main_image);
+                          (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
+                        }}
                       />
                     </div>
                     <div className="p-6">
@@ -548,22 +619,77 @@ export default function ProductsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Sol Taraf - Resimler */}
               <div className="space-y-4">
-                <div className="relative h-96">
+                <div className="relative h-96 bg-white border border-gray-200 rounded-lg">
+                  {/* Ana Görsel */}
                   <Image
-                    src={selectedProduct.main_image}
+                    src={getImageUrl(currentImage)}
                     alt={selectedProduct.title}
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-contain"
+                    onError={(e) => {
+                      console.error("Resim yüklenemedi:", currentImage);
+                      (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
+                    }}
                   />
+
+                  {/* Gezinme Okları */}
+                  <button 
+                    onClick={prevImage}
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full text-gray-800 hover:bg-opacity-100"
+                    aria-label="Önceki resim"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  <button 
+                    onClick={nextImage}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 p-2 rounded-full text-gray-800 hover:bg-opacity-100"
+                    aria-label="Sonraki resim"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {selectedProduct.additional_images.map((image, index) => (
-                    <div key={index} className="relative h-20">
+
+                {/* Küçük Resimler (Ana görsel + ek görseller) */}
+                <div className="grid grid-cols-5 gap-2">
+                  {/* Ana görsel küçük resmi */}
+                  <div 
+                    className={`relative h-20 border ${imageIndex === 0 ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'} rounded-md cursor-pointer overflow-hidden`}
+                    onClick={() => selectImage(0)}
+                  >
+                    <Image
+                      src={getImageUrl(selectedProduct.main_image)}
+                      alt={`${selectedProduct.title} - Ana Görsel`}
+                      fill
+                      sizes="(max-width: 768px) 20vw, 10vw"
+                      className="object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
+                      }}
+                    />
+                  </div>
+
+                  {/* Ek görseller */}
+                  {selectedProduct.additional_images.map((image, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`relative h-20 border ${imageIndex === idx + 1 ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-200'} rounded-md cursor-pointer overflow-hidden`}
+                      onClick={() => selectImage(idx + 1)}
+                    >
                       <Image
-                        src={image}
-                        alt={`${selectedProduct.title} - ${index + 1}`}
+                        src={getImageUrl(image)}
+                        alt={`${selectedProduct.title} - ${idx + 1}`}
                         fill
+                        sizes="(max-width: 768px) 20vw, 10vw"
                         className="object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
+                        }}
                       />
                     </div>
                   ))}

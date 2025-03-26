@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { getProductById, updateProduct, deleteProduct } from "@/lib/db";
+import { writeFile } from "fs/promises";
+import path from "path";
+import { existsSync, mkdirSync } from "fs";
 
 export async function GET(request: Request, context: { params: { id: string } }) {
   const { params } = context;
@@ -37,13 +40,7 @@ export async function PUT(request: Request, context: { params: { id: string } })
     const short_description = formData.get("short_description") as string;
     const category_id = parseInt(formData.get("category_id") as string);
     const segment = formData.get("segment") as string;
-    const main_image = formData.get("main_image") as string || '/images/products/default.jpg';
     const features = JSON.parse(formData.get("features") as string || "[]");
-    const additional_images = JSON.parse(formData.get("additional_images") as string || "[]");
-    
-    if (!title || !title.trim()) {
-      return NextResponse.json({ error: "Ürün adı boş olamaz" }, { status: 400 });
-    }
     
     // Ürün var mı kontrol et
     const existingProduct = await getProductById(id);
@@ -51,14 +48,62 @@ export async function PUT(request: Request, context: { params: { id: string } })
       return NextResponse.json({ error: "Ürün bulunamadı" }, { status: 404 });
     }
     
-    const updatedProduct = await updateProduct(id, { 
+    // Resim dosyalarını al
+    const mainImageFile = formData.get("main_image_file") as File | null;
+    const additionalImageFiles = formData.getAll("additional_image_files") as File[];
+    const keepExistingAdditionalImages = formData.get("keep_existing_additional_images") === "true";
+
+    if (!title || !title.trim()) {
+      return NextResponse.json({ error: "Ürün adı boş olamaz" }, { status: 400 });
+    }
+
+    // Resimlerin kaydedileceği klasörün varlığını kontrol et ve yoksa oluştur
+    const uploadDir = path.join(process.cwd(), "public/images/products");
+    if (!existsSync(uploadDir)) {
+      mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Ana resmi işle
+    let mainImagePath = existingProduct.main_image; // Mevcut ana resmi koru
+    if (mainImageFile) {
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      const filename = `${uniqueSuffix}-${mainImageFile.name.replace(/\s+/g, '-')}`;
+      const filePath = path.join(uploadDir, filename);
+      
+      const buffer = Buffer.from(await mainImageFile.arrayBuffer());
+      await writeFile(filePath, buffer);
+      
+      mainImagePath = `/images/products/${filename}`;
+    }
+
+    // Ek resimleri işle
+    let additionalImagePaths: string[] = [];
+    
+    // Mevcut ek resimleri koru (eğer istendiyse)
+    if (keepExistingAdditionalImages && existingProduct.additional_images) {
+      additionalImagePaths = [...existingProduct.additional_images];
+    }
+    
+    // Yeni ek resimleri ekle
+    for (const file of additionalImageFiles) {
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      const filename = `${uniqueSuffix}-${file.name.replace(/\s+/g, '-')}`;
+      const filePath = path.join(uploadDir, filename);
+      
+      const buffer = Buffer.from(await file.arrayBuffer());
+      await writeFile(filePath, buffer);
+      
+      additionalImagePaths.push(`/images/products/${filename}`);
+    }
+
+    const updatedProduct = await updateProduct(id, {
       title: title.trim(),
       short_description,
       category_id,
       segment,
-      main_image,
-      additional_images,
-      features
+      main_image: mainImagePath,
+      additional_images: additionalImagePaths,
+      features,
     });
     
     return NextResponse.json(updatedProduct);

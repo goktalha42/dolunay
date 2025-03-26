@@ -1,0 +1,10 @@
+// Bu dosyanın yerine gerçek bir placeholder görsel konulmalıdır.
+// Dosya boyutu küçük, 400x400 piksel civarında basit bir JPEG görsel ekleyin.
+// Dosya adı: placeholder.jpg
+// Konum: public/images/placeholder.jpg
+// Kullanım: Ürün resimleri yüklenemediğinde görüntülenecek.
+
+// Bu bir placeholder görsel dosyasıdır.
+// Aşağıdaki talimatları izleyerek gerçek bir resim dosyası ekleyin:
+// 1. 'public/images/placeholder.jpg' yoluna gerçek bir JPEG resmi koyun
+// 2. Bu dosyayı ürün resmi yüklenemediğinde fallback olarak kullanacaktır 

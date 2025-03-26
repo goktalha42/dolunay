@@ -49,6 +49,13 @@ export default function ProductsAdmin() {
     features: [],
   });
 
+  // Dosya yükleme formları için ekler yapalım
+  const [showForm, setShowForm] = useState(false);
+  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+  const [additionalImageFiles, setAdditionalImageFiles] = useState<File[]>([]);
+  const [mainImagePreview, setMainImagePreview] = useState<string>("");
+  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
+
   // Ürünleri getir
   const fetchProducts = async () => {
     setLoading(true);
@@ -103,13 +110,30 @@ export default function ProductsAdmin() {
     
     const formDataToSend = new FormData();
     
+    // Metin verilerini ekle
     Object.entries(formData).forEach(([key, value]) => {
-      if (key === "additional_images" || key === "features") {
+      if (key === "features") {
         formDataToSend.append(key, JSON.stringify(value));
-      } else {
+      } else if (key !== "main_image" && key !== "additional_images") {
+        // Resim yolları form data'dan çıkarılıyor, bunun yerine dosyalar gönderilecek
         formDataToSend.append(key, String(value));
       }
     });
+    
+    // Ana resim dosyasını ekle
+    if (mainImageFile) {
+      formDataToSend.append("main_image_file", mainImageFile);
+    }
+    
+    // Ek resim dosyalarını ekle
+    additionalImageFiles.forEach(file => {
+      formDataToSend.append("additional_image_files", file);
+    });
+    
+    // Güncelleme yaparken mevcut ek resimleri koru
+    if (selectedProduct && selectedProduct.additional_images && selectedProduct.additional_images.length > 0) {
+      formDataToSend.append("keep_existing_additional_images", "true");
+    }
     
     try {
       const url = selectedProduct 
@@ -133,6 +157,9 @@ export default function ProductsAdmin() {
         setTimeout(() => {
           setSuccess('');
         }, 3000);
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Bir hata oluştu');
       }
     } catch (error: any) {
       console.error("Ürün kaydedilirken hata:", error);
@@ -183,6 +210,10 @@ export default function ProductsAdmin() {
       features: [],
     });
     setSelectedProduct(null);
+    setMainImageFile(null);
+    setAdditionalImageFiles([]);
+    setMainImagePreview("");
+    setAdditionalImagePreviews([]);
   };
 
   const handleProductEdit = (product: Product) => {
@@ -225,18 +256,50 @@ export default function ProductsAdmin() {
     }
     
     if (field === 'main_image') {
-      // Ana görsel için dosya ismini kullan
       const file = e.target.files[0];
-      setFormData({
-        ...formData,
-        main_image: `/images/products/${file.name}`,
-      });
+      setMainImageFile(file);
+      
+      // Önizleme URL'i oluştur
+      const imageUrl = URL.createObjectURL(file);
+      setMainImagePreview(imageUrl);
     } else if (field === 'additional_images') {
-      // Ek görseller için tüm dosya isimlerini kullan
-      const fileNames = Array.from(e.target.files).map(file => `/images/products/${file.name}`);
+      const files = Array.from(e.target.files);
+      setAdditionalImageFiles(prevFiles => [...prevFiles, ...files]);
+      
+      // Önizleme URL'leri oluştur
+      const imageUrls = files.map(file => URL.createObjectURL(file));
+      setAdditionalImagePreviews(prevUrls => [...prevUrls, ...imageUrls]);
+    }
+  };
+
+  const removeAdditionalImage = (index: number) => {
+    // Seçili ek resmi kaldır
+    setAdditionalImageFiles(prev => {
+      const updated = [...prev];
+      updated.splice(index, 1);
+      return updated;
+    });
+    
+    // Önizlemeyi de kaldır
+    setAdditionalImagePreviews(prev => {
+      const updated = [...prev];
+      // URL'i temizle
+      URL.revokeObjectURL(updated[index]);
+      updated.splice(index, 1);
+      return updated;
+    });
+  };
+
+  // Ana görsel sil fonksiyonu
+  const removeMainImage = () => {
+    setMainImageFile(null);
+    setMainImagePreview("");
+    if (selectedProduct) {
+      // Ürün düzenleme modundayken ana görseli sil
+      // Bu işlemle görsel yolu yerine default.jpg kullanılacak
       setFormData({
         ...formData,
-        additional_images: [...formData.additional_images, ...fileNames],
+        main_image: "/images/products/default.jpg"
       });
     }
   };
@@ -331,262 +394,276 @@ export default function ProductsAdmin() {
 
       {/* Ürün Ekleme/Düzenleme Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">
-              {selectedProduct ? "Ürün Düzenle" : "Yeni Ürün Ekle"}
-            </h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-800">
+                {selectedProduct ? "Ürünü Düzenle" : "Yeni Ürün Ekle"}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
 
-            {/* Form içi hata mesajı */}
-            {error && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-                {error}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Ürün Adı */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ürün Adı*
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
+                  required
+                />
               </div>
-            )}
-            
-            {/* Form içi başarı mesajı */}
-            {success && (
-              <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">
-                {success}
+
+              {/* Kısa Açıklama */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ürün Açıklaması
+                </label>
+                <textarea
+                  value={formData.short_description}
+                  onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
+                  rows={3}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
+                />
               </div>
-            )}
 
-            <form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Ürün Adı</label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
-                    required
-                    disabled={loading}
-                  />
-                </div>
+              {/* Kategori */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Kategori
+                </label>
+                <select
+                  value={formData.category_id}
+                  onChange={(e) => setFormData({ ...formData, category_id: Number(e.target.value) })}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
+                >
+                  <option value="0">Kategori Seçin</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Kategori</label>
-                  <select
-                    value={formData.category_id}
-                    onChange={(e) => setFormData({...formData, category_id: parseInt(e.target.value)})}
-                    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
-                    disabled={loading}
-                  >
-                    <option value="0">Kategorisiz</option>
-                    {categories
-                      .filter(cat => cat.id !== 0)
-                      .map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Segment */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Segment
+                </label>
+                <select
+                  value={formData.segment}
+                  onChange={(e) => setFormData({ ...formData, segment: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
+                >
+                  <option value="başlangıç">Başlangıç</option>
+                  <option value="orta">Orta</option>
+                  <option value="üst">Üst</option>
+                </select>
+              </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Kısa Açıklama</label>
-                  <textarea
-                    value={formData.short_description}
-                    onChange={(e) => setFormData({...formData, short_description: e.target.value})}
-                    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
-                    rows={3}
-                    disabled={loading}
-                  ></textarea>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Segment</label>
-                  <select
-                    value={formData.segment}
-                    onChange={(e) => setFormData({...formData, segment: e.target.value})}
-                    className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
-                    disabled={loading}
-                  >
-                    <option value="başlangıç">Başlangıç Segmenti</option>
-                    <option value="orta">Orta Segment</option>
-                    <option value="üst">Üst Segment</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Ana Görsel</label>
-                  <div className="flex gap-2">
+              {/* Ana Görsel */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ana Görsel
+                </label>
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
                     <input
-                      type="text"
-                      value={formData.main_image}
-                      onChange={(e) => setFormData({...formData, main_image: e.target.value})}
-                      className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
-                      placeholder="/images/products/ornek.jpg"
-                      disabled={loading}
+                      type="file"
+                      onChange={(e) => handleFileChange(e, 'main_image')}
+                      accept="image/*"
+                      className="sr-only"
+                      id="main-image-upload"
                     />
-                    <div className="relative">
-                      <label className="bg-blue-100 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-200 cursor-pointer flex items-center">
-                        <span>Gözat</span>
-                        <input
-                          type="file"
-                          onChange={(e) => handleFileChange(e, 'main_image')}
-                          className="absolute inset-0 opacity-0 w-full cursor-pointer"
-                          accept="image/*"
-                          disabled={loading}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  {formData.main_image && (
-                    <div className="mt-2 p-2 border rounded-lg bg-gray-50">
-                      <p className="text-xs text-gray-500 mb-1">Seçilen görsel:</p>
-                      <div className="h-16 overflow-hidden">
-                        <img
-                          src={formData.main_image}
-                          alt="Ana görsel önizleme"
-                          className="h-full object-contain"
-                          onError={(e) => {
-                            e.currentTarget.src = "/images/no-image.png";
-                            e.currentTarget.onerror = null;
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700">Ek Görseller</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={Array.isArray(formData.additional_images) ? formData.additional_images.join(', ') : ''}
-                      onChange={(e) => 
-                        setFormData({
-                          ...formData, 
-                          additional_images: e.target.value.split(',').map(img => img.trim()).filter(Boolean)
-                        })
-                      }
-                      className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
-                      placeholder="/images/products/ornek1.jpg, /images/products/ornek2.jpg"
-                      disabled={loading}
-                    />
-                    <div className="relative">
-                      <label className="bg-blue-100 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-200 cursor-pointer flex items-center">
-                        <span>Gözat</span>
-                        <input
-                          type="file"
-                          multiple
-                          onChange={(e) => handleFileChange(e, 'additional_images')}
-                          className="absolute inset-0 opacity-0 w-full cursor-pointer"
-                          accept="image/*"
-                          disabled={loading}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  {formData.additional_images.length > 0 && (
-                    <div className="mt-2 p-2 border rounded-lg bg-gray-50">
-                      <p className="text-xs text-gray-500 mb-1">Ek görseller ({formData.additional_images.length}):</p>
-                      <div className="flex gap-2 overflow-x-auto py-1">
-                        {formData.additional_images.map((img, idx) => (
-                          <div key={idx} className="h-12 w-12 flex-shrink-0 relative group">
-                            <img
-                              src={img}
-                              alt={`Görsel ${idx + 1}`}
-                              className="h-full w-full object-cover rounded"
-                              onError={(e) => {
-                                e.currentTarget.src = "/images/no-image.png";
-                                e.currentTarget.onerror = null;
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const newImages = [...formData.additional_images];
-                                newImages.splice(idx, 1);
-                                setFormData({...formData, additional_images: newImages});
-                              }}
-                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100"
-                              disabled={loading}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Özellikler</label>
-                  <div className="space-y-2">
-                    {formData.features.map((feature, index) => (
-                      <div key={index} className="flex gap-2">
-                        <input
-                          type="text"
-                          value={feature}
-                          onChange={(e) => {
-                            const newFeatures = [...formData.features];
-                            newFeatures[index] = e.target.value;
-                            setFormData({...formData, features: newFeatures});
-                          }}
-                          className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-700"
-                          placeholder="Ürün özelliği"
-                          disabled={loading}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newFeatures = [...formData.features];
-                            newFeatures.splice(index, 1);
-                            setFormData({...formData, features: newFeatures});
-                          }}
-                          className="bg-red-100 text-red-600 p-2 rounded-lg hover:bg-red-200"
-                          disabled={loading}
-                        >
-                          <FaTrash size={14} />
-                        </button>
-                      </div>
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({...formData, features: [...formData.features, '']});
-                      }}
-                      className="bg-blue-100 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-200 flex items-center gap-1 text-sm"
-                      disabled={loading}
+                    <label
+                      htmlFor="main-image-upload"
+                      className="cursor-pointer py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                     >
-                      <FaPlus size={12} /> Özellik Ekle
-                    </button>
+                      Resim Seç
+                    </label>
                   </div>
+                  <div className="text-sm text-gray-500">
+                    {mainImageFile ? mainImageFile.name : "Henüz resim seçilmedi"}
+                  </div>
+                </div>
+                
+                {/* Ana görsel önizleme */}
+                {(mainImagePreview || selectedProduct?.main_image) && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-gray-700">Önizleme:</h4>
+                      <button 
+                        type="button"
+                        onClick={removeMainImage}
+                        className="text-red-600 hover:text-red-800 text-sm flex items-center"
+                      >
+                        <FaTrash className="mr-1" size={12} />
+                        Ana görseli kaldır
+                      </button>
+                    </div>
+                    <div className="relative w-40 h-40 border border-gray-200 rounded-md overflow-hidden bg-white">
+                      <Image
+                        src={mainImagePreview || selectedProduct?.main_image || "/images/placeholder.jpg"}
+                        alt="Ana görsel önizleme"
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Ek Görseller */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ek Görseller
+                </label>
+                <div className="flex items-center space-x-4">
+                  <div className="relative">
+                    <input
+                      type="file"
+                      onChange={(e) => handleFileChange(e, 'additional_images')}
+                      accept="image/*"
+                      multiple
+                      className="sr-only"
+                      id="additional-images-upload"
+                    />
+                    <label
+                      htmlFor="additional-images-upload"
+                      className="cursor-pointer py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                    >
+                      Resimler Seç
+                    </label>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {additionalImageFiles.length > 0 
+                      ? `${additionalImageFiles.length} resim seçildi` 
+                      : "Henüz resim seçilmedi"}
+                  </div>
+                </div>
+                
+                {/* Ek görseller önizleme */}
+                {(additionalImagePreviews.length > 0 || (selectedProduct?.additional_images && selectedProduct.additional_images.length > 0)) && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Ek Görseller Önizleme:</h4>
+                    <div className="grid grid-cols-4 gap-2">
+                      {/* Yeni yüklenen resimlerin önizlemesi */}
+                      {additionalImagePreviews.map((preview, index) => (
+                        <div key={`new-${index}`} className="relative w-20 h-20 border border-gray-200 rounded-md overflow-hidden group bg-white">
+                          <Image
+                            src={preview}
+                            alt={`Ek görsel ${index + 1}`}
+                            fill
+                            className="object-contain"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeAdditionalImage(index)}
+                            className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                      
+                      {/* Mevcut ek resimlerin gösterimi (sadece düzenleme modunda) */}
+                      {selectedProduct?.additional_images && selectedProduct.additional_images.length > 0 && 
+                       additionalImagePreviews.length === 0 && 
+                       selectedProduct.additional_images.map((image, index) => (
+                        <div key={`existing-${index}`} className="relative w-20 h-20 border border-gray-200 rounded-md overflow-hidden bg-white">
+                          <Image
+                            src={image}
+                            alt={`Mevcut ek görsel ${index + 1}`}
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Özellikler */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Özellikler
+                </label>
+                <div className="space-y-2">
+                  {formData.features.map((feature, index) => (
+                    <div key={index} className="flex items-center">
+                      <input
+                        type="text"
+                        value={feature}
+                        onChange={(e) => {
+                          const updatedFeatures = [...formData.features];
+                          updatedFeatures[index] = e.target.value;
+                          setFormData({ ...formData, features: updatedFeatures });
+                        }}
+                        className="flex-grow p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
+                        placeholder="Örn: Su geçirmez"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedFeatures = [...formData.features];
+                          updatedFeatures.splice(index, 1);
+                          setFormData({ ...formData, features: updatedFeatures });
+                        }}
+                        className="ml-2 p-2 text-red-600 hover:text-red-800"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, features: [...formData.features, ''] })}
+                    className="py-1 px-3 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    + Özellik Ekle
+                  </button>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-4 mt-6 pt-4 border-t">
+              {/* Hata Mesajı */}
+              {error && (
+                <div className="p-2 text-red-700 bg-red-100 rounded-md">{error}</div>
+              )}
+
+              {/* Gönder Butonu */}
+              <div className="flex justify-end pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     resetForm();
                   }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                  disabled={loading}
+                  className="mr-2 px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className={`px-4 py-2 rounded-lg text-white ${
-                    loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
-                  }`}
                   disabled={loading}
+                  className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none ${
+                    loading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                      İşleniyor...
-                    </span>
-                  ) : (
-                    selectedProduct ? "Güncelle" : "Kaydet"
-                  )}
+                  {loading ? "İşleniyor..." : selectedProduct ? "Güncelle" : "Ekle"}
                 </button>
               </div>
             </form>
