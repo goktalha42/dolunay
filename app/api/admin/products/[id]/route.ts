@@ -210,7 +210,7 @@ export async function DELETE(request: Request, context: { params: { id: string }
     if (!success) {
       return NextResponse.json({ error: "Ürün silinemedi" }, { status: 400 });
     }
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Ürün silinirken hata:", error);
