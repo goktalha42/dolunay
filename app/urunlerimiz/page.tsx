@@ -188,6 +188,13 @@ export default function ProductsPage() {
             <p className="text-xl max-w-3xl mx-auto">
               En son teknoloji ile üretilmiş Vista işitme cihazlarını keşfedin
             </p>
+            
+            <Link 
+              href="/urunlerimiz/test" 
+              className="mt-6 inline-block bg-white text-blue-700 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+            >
+              Size Uygun İşitme Cihazını Bulun
+            </Link>
           </div>
         </div>
       </div>

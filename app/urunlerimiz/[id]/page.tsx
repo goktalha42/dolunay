@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { FaArrowLeft, FaCheckCircle, FaInfoCircle, FaShoppingCart, FaTruck, FaPhoneAlt } from "react-icons/fa";
+import { FaArrowLeft, FaCheckCircle, FaInfoCircle, FaShoppingCart, FaTruck, FaPhoneAlt, FaExchangeAlt, FaQuestionCircle, FaRegListAlt, FaTags, FaHeadphones } from "react-icons/fa";
 import Link from "next/link";
 
 interface Product {
-  id?: number;
+  id: number;
   title: string;
-  short_description?: string;
-  category_id?: number;
-  category_name?: string;
-  segment?: string;
-  main_image?: string;
+  short_description: string;
+  long_description?: string;
+  category_id: number;
+  segment: string;
+  main_image: string;
   additional_images?: string[] | string;
   features?: string[] | string;
   [key: string]: any;
@@ -22,11 +22,14 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   
   // Resim galerisi için
   const [currentImage, setCurrentImage] = useState<string>("");
   const [imageIndex, setImageIndex] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'description' | 'features'>('description');
+  const [compareProducts, setCompareProducts] = useState<Product[]>([]);
+  const [showComparison, setShowComparison] = useState(false);
   
   useEffect(() => {
     const fetchProduct = async () => {
@@ -45,6 +48,9 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
         if (productData && productData.main_image) {
           setCurrentImage(productData.main_image);
         }
+        
+        // Benzer ürünleri getir
+        fetchSimilarProducts(productData);
       } catch (error) {
         console.error("Ürün getirme hatası:", error);
         setError("Ürün bilgileri yüklenirken bir hata oluştu.");
@@ -57,6 +63,41 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
       fetchProduct();
     }
   }, [params.id]);
+  
+  // Benzer ürünleri getirme fonksiyonu
+  const fetchSimilarProducts = async (currentProduct: Product) => {
+    try {
+      const response = await fetch(`/api/admin/products?category_id=${currentProduct.category_id}`);
+      if (!response.ok) {
+        throw new Error("Benzer ürünler alınamadı");
+      }
+      
+      const data = await response.json();
+      // Mevcut ürünü listeden çıkar ve maksimum 3 benzer ürün göster
+      const filteredProducts = data
+        .filter((p: Product) => p.id !== currentProduct.id)
+        .slice(0, 3);
+      
+      setSimilarProducts(filteredProducts);
+      // Karşılaştırma için ilk benzer ürünü ekle
+      if (filteredProducts.length > 0) {
+        setCompareProducts([filteredProducts[0]]);
+      }
+    } catch (error) {
+      console.error("Benzer ürünler getirilirken hata oluştu:", error);
+    }
+  };
+  
+  // Ürün karşılaştırmaya ekleme
+  const toggleProductComparison = (product: Product) => {
+    if (compareProducts.some(p => p.id === product.id)) {
+      setCompareProducts(compareProducts.filter(p => p.id !== product.id));
+    } else {
+      if (compareProducts.length < 2) { // Maksimum 2 ürün karşılaştırması
+        setCompareProducts([...compareProducts, product]);
+      }
+    }
+  };
   
   // Resim değiştirme fonksiyonları
   const nextImage = () => {
@@ -301,9 +342,6 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${segmentInfo.color}`}>
                 {segmentInfo.text}
               </span>
-              <span className="text-sm text-gray-500">
-                Kategori: <span className="font-medium">{product.category_name || "Genel"}</span>
-              </span>
             </div>
             
             {/* Ürün Başlığı */}
@@ -345,9 +383,17 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
             <div className="mb-8">
               {activeTab === 'description' ? (
                 <div className="prose prose-blue max-w-none">
-                  <p className="text-gray-600 leading-relaxed">
-                    {product.short_description || "Bu ürün için detaylı açıklama bulunmamaktadır."}
-                  </p>
+                  {product.long_description ? (
+                    <div>
+                      <div className="text-gray-600 leading-relaxed whitespace-pre-line">
+                        {product.long_description}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 leading-relaxed">
+                      Detaylı ürün açıklaması bulunmamaktadır.
+                    </p>
+                  )}
                   
                   <div className="mt-6 bg-blue-50 rounded-lg p-4">
                     <h4 className="font-medium text-blue-800 mb-2 flex items-center">
@@ -360,7 +406,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                     </p>
                   </div>
                 </div>
-              ) : (
+              ) : activeTab === 'features' ? (
                 <div className="space-y-4">
                   <ul className="space-y-3">
                     {product.features && Array.isArray(product.features) ? 
@@ -368,9 +414,23 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                         if (!feature || typeof feature !== 'string') {
                           return null;
                         }
+                        
+                        // Özellik ikonlarını belirleme
+                        const featureIcon = () => {
+                          if (feature.toLowerCase().includes('bluetooth')) {
+                            return <span className="bg-blue-100 p-2 rounded-full text-blue-600 mr-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M11 12.3l1.3-1.3 1.5 1.5L10 16V8.8l3.8 3.8-1.5 1.5-1.3-1.3zM10 4l3.8 3.8-1.5 1.5L11 8l1.3-1.3 1.5 1.5L10 12V4z"/></svg></span>;
+                          } else if (feature.toLowerCase().includes('gürültü')) {
+                            return <span className="bg-green-100 p-2 rounded-full text-green-600 mr-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" /></svg></span>;
+                          } else if (feature.toLowerCase().includes('şarj')) {
+                            return <span className="bg-yellow-100 p-2 rounded-full text-yellow-600 mr-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 7h-2v2h2V7zm0 4h-2v2h2v-2zm2-8H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h10v14zm-8-2h2v-2H7v2z"/></svg></span>;
+                          } else {
+                            return <FaCheckCircle className="text-green-500 mt-1 mr-3 flex-shrink-0" />;
+                          }
+                        };
+                        
                         return (
                           <li key={index} className="flex items-start">
-                            <FaCheckCircle className="text-green-500 mt-1 mr-3 flex-shrink-0" />
+                            {featureIcon()}
                             <span className="text-gray-700">{feature}</span>
                           </li>
                         );
@@ -379,7 +439,36 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                     }
                   </ul>
                 </div>
+              ) : (
+                null
               )}
+            </div>
+            
+            {/* Fiyat teklifi al butonu */}
+            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 mb-8">
+              <div className="flex items-start">
+                <FaTags className="text-blue-500 mt-1 mr-3 flex-shrink-0" />
+                <div>
+                  <h3 className="text-blue-800 font-medium mb-2">Fiyat Teklifi Alın</h3>
+                  <p className="text-blue-700 text-sm mb-3">
+                    İhtiyaçlarınıza özel fiyat teklifi için bizi arayabilir veya iletişim formumuzu doldurabilirsiniz.
+                  </p>
+                  <div className="flex space-x-3">
+                    <a 
+                      href="tel:+905537502842" 
+                      className="bg-blue-600 text-white px-4 py-2 rounded text-sm inline-flex items-center hover:bg-blue-700 transition-colors"
+                    >
+                      <FaPhoneAlt className="mr-2" /> Hemen Arayın
+                    </a>
+                    <Link 
+                      href="/iletisim" 
+                      className="bg-white text-blue-600 border border-blue-200 px-4 py-2 rounded text-sm inline-flex items-center hover:bg-gray-50 transition-colors"
+                    >
+                      İletişim Formu
+                    </Link>
+                  </div>
+                </div>
+              </div>
             </div>
             
             {/* İletişim ve Sipariş Bilgileri */}
@@ -417,55 +506,242 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
         </div>
       </div>
       
+      {/* "Size Uygun mu?" testi ve Sık Sorulan Sorular - Ürün ve benzer ürünler arasında */}
+      <div className="max-w-7xl mx-auto mt-12 px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Size Uygun mu? testi */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Bu Cihaz Size Uygun mu?</h3>
+            <p className="text-gray-600 text-sm mb-5">
+              Aşağıdaki sorulara vereceğiniz cevaplar, bu cihazın sizin için uygun olup olmadığını belirlemenize yardımcı olacaktır.
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex items-start">
+                <FaCheckCircle className="text-green-500 mt-1 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="text-gray-800 font-medium">Orta-İleri Derece İşitme Kaybınız Var</p>
+                  <p className="text-gray-600 text-sm">Bu cihaz, {product.segment === 'başlangıç' ? 'hafif-orta' : product.segment === 'orta' ? 'orta-ileri' : product.segment === 'üst' ? 'ileri-çok ileri' : 'tüm'} derece işitme kayıpları için uygundur.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <FaCheckCircle className="text-green-500 mt-1 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="text-gray-800 font-medium">Sosyal Ortamlarda Aktifsiniz</p>
+                  <p className="text-gray-600 text-sm">Restoranlar, toplantılar gibi gürültülü ortamlarda sık bulunuyorsanız, bu cihazın gürültü azaltma özelliği size yardımcı olacaktır.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <FaCheckCircle className="text-green-500 mt-1 mr-3 flex-shrink-0" />
+                <div>
+                  <p className="text-gray-800 font-medium">Teknolojik Cihazlarla Bağlantı İstiyorsunuz</p>
+                  <p className="text-gray-600 text-sm">Akıllı telefon, televizyon gibi cihazlarla doğrudan bağlantı kurmak istiyorsanız, bu cihaz bluetooth özellikleriyle buna imkan tanır.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6">
+              <a href="tel:+905537502842" className="text-blue-600 font-medium flex items-center">
+                <FaPhoneAlt className="mr-2" /> Hemen detaylı değerlendirme için bizi arayın
+              </a>
+            </div>
+          </div>
+          
+          {/* Sık Sorulan Sorular */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Sık Sorulan Sorular</h3>
+            
+            <div className="space-y-4">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="border-b border-gray-200 p-4">
+                  <h4 className="text-base font-medium text-gray-900 flex items-center">
+                    <FaQuestionCircle className="text-blue-500 mr-2 flex-shrink-0" />
+                    İşitme cihazı kullanımına nasıl alışırım?
+                  </h4>
+                </div>
+                <div className="p-4 text-gray-700 text-sm">
+                  <p>
+                    İşitme cihazına alışmak genellikle 2-4 hafta sürer. Bu süre zarfında düzenli kullanım ve uzman desteği önemlidir. 
+                    Merkezimiz bu süreçte size destek olacak ve gerekli ayarlamaları yapacaktır.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="border-b border-gray-200 p-4">
+                  <h4 className="text-base font-medium text-gray-900 flex items-center">
+                    <FaQuestionCircle className="text-blue-500 mr-2 flex-shrink-0" />
+                    SGK işitme cihazlarını karşılıyor mu?
+                  </h4>
+                </div>
+                <div className="p-4 text-gray-700 text-sm">
+                  <p>
+                    Evet, SGK belirli oranlarda işitme cihazı bedelini karşılamaktadır. 
+                    Karşılama oranları işitme kaybı derecenize ve SGK'nın belirlediği limitlere göre değişmektedir. 
+                    Detaylı bilgi için merkezimize başvurabilirsiniz.
+                  </p>
+                </div>
+              </div>
+              
+              <Link href="/urunlerimiz/test" className="text-blue-600 font-medium mt-4 inline-flex items-center">
+                <FaInfoCircle className="mr-2" /> Size uygun cihazı bulmak için testi yapın
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       {/* Ürün Varyasyonları */}
       <div className="max-w-7xl mx-auto mt-12 px-4 sm:px-6 lg:px-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Diğer Vista İşitme Cihazı Modelleri</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Benzer Ürünler</h2>
+          {similarProducts.length > 0 && (
+            <button 
+              onClick={() => setShowComparison(!showComparison)}
+              className="flex items-center text-blue-600 hover:text-blue-800 font-medium"
+            >
+              <FaExchangeAlt className="mr-2" /> 
+              {showComparison ? "Karşılaştırmayı Kapat" : "Karşılaştır"}
+            </button>
+          )}
+        </div>
+        
+        {/* Karşılaştırma tablosu */}
+        {showComparison && (
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mb-8 overflow-x-auto">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Ürün Karşılaştırması</h3>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="pb-3 text-left text-gray-500 font-medium">Özellik</th>
+                  <th className="pb-3 text-left text-gray-800 font-medium">
+                    {product?.title || "Seçili Ürün"}
+                  </th>
+                  {compareProducts.map((p) => (
+                    <th key={p.id} className="pb-3 text-left text-gray-800 font-medium">
+                      {p.title}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-gray-100">
+                  <td className="py-3 text-gray-500 font-medium">Segment</td>
+                  <td className="py-3 text-gray-800">
+                    <span className={`px-2 py-1 text-xs rounded-full ${getSegmentInfo(product?.segment).color}`}>
+                      {getSegmentInfo(product?.segment).text}
+                    </span>
+                  </td>
+                  {compareProducts.map((p) => (
+                    <td key={p.id} className="py-3 text-gray-800">
+                      <span className={`px-2 py-1 text-xs rounded-full ${getSegmentInfo(p.segment).color}`}>
+                        {getSegmentInfo(p.segment).text}
+                      </span>
+                    </td>
+                  ))}
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-3 text-gray-500 font-medium">Kısa Açıklama</td>
+                  <td className="py-3 text-gray-800">{product?.short_description || "-"}</td>
+                  {compareProducts.map((p) => (
+                    <td key={p.id} className="py-3 text-gray-800">{p.short_description || "-"}</td>
+                  ))}
+                </tr>
+                
+                {/* Özellikler için dinamik satırlar */}
+                {product.features && Array.isArray(product.features) && product.features.map((feature, index) => (
+                  <tr key={index} className="border-b border-gray-100">
+                    <td className="py-3 text-gray-500 font-medium">{feature}</td>
+                    <td className="py-3 text-gray-800">
+                      <span className="text-green-500">✓</span>
+                    </td>
+                    {compareProducts.map((p) => (
+                      <td key={p.id} className="py-3 text-gray-800">
+                        {p.features && Array.isArray(p.features) && 
+                         p.features.includes(feature) ? 
+                          <span className="text-green-500">✓</span> : 
+                          <span className="text-red-500">✗</span>}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                
+                <tr>
+                  <td className="py-3 text-gray-500 font-medium">İşlem</td>
+                  <td className="py-3 text-gray-800">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">Seçili Ürün</span>
+                  </td>
+                  {compareProducts.map((p) => (
+                    <td key={p.id} className="py-3 text-gray-800">
+                      <Link 
+                        href={`/urunlerimiz/${p.id}`} 
+                        className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                      >
+                        İncele
+                      </Link>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Benzer ürünler burada listelenebilir */}
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="text-center">
-              <div className="relative h-48 mb-3">
-                <Image 
-                  src="/images/UN_Packshot_B-312_Right_Right_Receiver_P7_Pewter_Actual_Size_RGB_050-6401-P744_01.png" 
-                  alt="Vista İşitme Cihazı" 
-                  fill
-                  className="object-contain"
-                />
+          {similarProducts.length > 0 ? (
+            similarProducts.map(similarProduct => (
+              <div key={similarProduct.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="text-center">
+                  <div className="relative h-48 mb-3">
+                    <Image 
+                      src={getImageUrl(similarProduct.main_image || "")}
+                      alt={similarProduct.title} 
+                      fill
+                      className="object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/images/placeholder.jpg";
+                      }}
+                    />
+                  </div>
+                  <h3 className="font-medium text-gray-900">{similarProduct.title}</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {similarProduct.segment && (
+                      <span className={`text-xs ${getSegmentInfo(similarProduct.segment).color} px-2 py-0.5 rounded-full`}>
+                        {getSegmentInfo(similarProduct.segment).text}
+                      </span>
+                    )}
+                  </p>
+                  
+                  <div className="mt-4 flex justify-between items-center">
+                    <Link 
+                      href={`/urunlerimiz/${similarProduct.id}`}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      Detaylar
+                    </Link>
+                    
+                    <button 
+                      onClick={() => toggleProductComparison(similarProduct)}
+                      className={`text-sm px-3 py-1 rounded-full ${
+                        compareProducts.some(p => p.id === similarProduct.id)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {compareProducts.some(p => p.id === similarProduct.id) ? 
+                        'Karşılaştırmadan Çıkar' : 'Karşılaştır'}
+                    </button>
+                  </div>
+                </div>
               </div>
-              <h3 className="font-medium text-gray-900">Vista Premium</h3>
-              <p className="text-sm text-gray-500 mt-1">Üst Segment</p>
+            ))
+          ) : (
+            <div className="col-span-3 text-center py-10 text-gray-500">
+              Benzer ürün bulunamadı.
             </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="text-center">
-              <div className="relative h-48 mb-3">
-                <Image 
-                  src="/images/UN_Packshot_B-312_Right_Right_Receiver_P7_Pewter_Actual_Size_RGB_050-6401-P744_01.png"
-                  alt="Vista İşitme Cihazı" 
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <h3 className="font-medium text-gray-900">Vista Comfort</h3>
-              <p className="text-sm text-gray-500 mt-1">Orta Segment</p>
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="text-center">
-              <div className="relative h-48 mb-3">
-                <Image 
-                  src="/images/UN_Packshot_B-312_Right_Right_Receiver_P7_Pewter_Actual_Size_RGB_050-6401-P744_01.png"
-                  alt="Vista İşitme Cihazı" 
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <h3 className="font-medium text-gray-900">Vista Essential</h3>
-              <p className="text-sm text-gray-500 mt-1">Başlangıç Segment</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
       

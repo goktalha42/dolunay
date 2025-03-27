@@ -25,14 +25,18 @@ export async function POST(request: Request) {
     const segment = formData.get("segment") as string;
     
     // features değerini al ve parse et
-    let features: string[] = [];
+    let features: number[] = [];
     const featuresStr = formData.get("features") as string;
     
     try {
       if (featuresStr) {
         const parsedFeatures = JSON.parse(featuresStr);
         if (Array.isArray(parsedFeatures)) {
-          features = parsedFeatures;
+          features = parsedFeatures.map(f => {
+            if (typeof f === 'number') return f;
+            if (typeof f === 'string' && !isNaN(Number(f))) return Number(f);
+            return 0;
+          }).filter(f => f > 0);
         }
       }
       console.log("Yeni ürün - Features parsed:", features);

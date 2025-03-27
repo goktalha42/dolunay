@@ -46,6 +46,11 @@ export default function AdminSidebar() {
       icon: <FaList className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
     },
     { 
+      path: "/admin/ozellikler", 
+      label: "Özellikler", 
+      icon: <FaList className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+    },
+    { 
       path: "/admin/urunler", 
       label: "Ürünler", 
       icon: <FaBoxOpen className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />

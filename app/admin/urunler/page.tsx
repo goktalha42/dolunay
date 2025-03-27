@@ -3,18 +3,21 @@
 import { useState, useEffect, useRef } from "react";
 import { FaPlus, FaEdit, FaTrash, FaImage, FaSearch } from "react-icons/fa";
 import Image from "next/image";
+import Link from "next/link";
+import { getFeatureColor } from "@/app/lib/utils/coloring";
 
 interface Product {
   id?: number;
   title: string;
   short_description?: string;
+  long_description?: string;
   category_id?: number;
   category_name?: string;
   segment?: string;
   image?: string;
   main_image?: string;
   additional_images?: string[] | string;
-  features?: string[] | string;
+  features?: number[] | string[];
   [key: string]: any; // Diğer olası alanlar için
 }
 
@@ -24,20 +27,28 @@ interface Category {
   parent_id: number | null;
 }
 
+interface Feature {
+  id: number;
+  name: string;
+  display_order: number;
+}
+
 interface FormDataType {
   title: string;
   short_description: string;
+  long_description: string;
   category_id: number;
   segment: string;
   main_image: string;
   additional_images: string[];
-  features: string[];
+  features: number[]; // Özellik ID'lerini tutan dizi
   [key: string]: any; // Diğer olası alanlar için
 }
 
 export default function ProductsAdmin() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [features, setFeatures] = useState<Feature[]>([]); // Özellikleri tutmak için
   const [showModal, setShowModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,6 +57,7 @@ export default function ProductsAdmin() {
   const [formData, setFormData] = useState<FormDataType>({
     title: "",
     short_description: "",
+    long_description: "",
     category_id: 0,
     segment: "orta",
     main_image: "",
@@ -70,6 +82,10 @@ export default function ProductsAdmin() {
 
   // Arama için state ekleyelim
   const [searchTerm, setSearchTerm] = useState<string>("");
+
+  // Kullanılabilir özellikleri getir
+  const [availableFeatures, setAvailableFeatures] = useState<Feature[]>([]);
+  const [loadingFeatures, setLoadingFeatures] = useState(false);
 
   // Ürünleri getir
   const fetchProducts = async () => {
@@ -107,9 +123,28 @@ export default function ProductsAdmin() {
     }
   };
 
+  // Özellikleri getir
+  const fetchFeatures = async () => {
+    try {
+      setLoadingFeatures(true);
+      const response = await fetch('/api/features');
+      if (response.ok) {
+        const features = await response.json();
+        setAvailableFeatures(features);
+      } else {
+        console.error('Özellikler getirilemedi');
+      }
+    } catch (error) {
+      console.error('Özellikler getirirken hata:', error);
+    } finally {
+      setLoadingFeatures(false);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
+    fetchFeatures(); // Özellikleri getir
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -241,78 +276,74 @@ export default function ProductsAdmin() {
   };
 
   const resetForm = () => {
+    setSelectedProduct(null);
     setFormData({
       title: "",
       short_description: "",
+      long_description: "",
       category_id: 0,
-      segment: "başlangıç",
+      segment: "orta",
       main_image: "",
       additional_images: [],
-      features: [],
+      features: []
     });
-    setSelectedProduct(null);
     setMainImageFile(null);
-    setAdditionalImageFiles([]);
     setMainImagePreview("");
+    setAdditionalImageFiles([]);
     setAdditionalImagePreviews([]);
-    setExistingAdditionalImages([]);
   };
 
   const handleProductEdit = (product: Product) => {
-    console.log("Düzenlenecek ürün:", product);
-
-    // Ek resimler ve özellikler için doğrulama ve dönüşüm
-    let validAdditionalImages: string[] = [];
-    if (product.additional_images) {
-      console.log("Ek resimler tipi:", typeof product.additional_images);
-      console.log("Ek resimler değeri:", product.additional_images);
-      
-      try {
-        // Eğer string ise JSON olarak parse et
-        if (typeof product.additional_images === 'string' && product.additional_images.trim() !== '') {
-          validAdditionalImages = JSON.parse(product.additional_images as string);
-        } 
-        // Eğer zaten array ise doğrudan kullan
-        else if (Array.isArray(product.additional_images)) {
-          validAdditionalImages = product.additional_images;
-        }
-        
-        console.log("İşlenmiş ek resimler:", validAdditionalImages);
-      } catch (error) {
-        console.error("Ek resimler parse hatası:", error);
-        validAdditionalImages = [];
-      }
-    }
-
-    let validFeatures: string[] = [];
-    if (product.features) {
-      console.log("Özellikler tipi:", typeof product.features);
-      console.log("Özellikler değeri:", product.features);
-      
-      try {
-        // Eğer string ise JSON olarak parse et
-        if (typeof product.features === 'string' && product.features.trim() !== '') {
-          validFeatures = JSON.parse(product.features as string);
-        } 
-        // Eğer zaten array ise doğrudan kullan
-        else if (Array.isArray(product.features)) {
-          validFeatures = product.features;
-        }
-        
-        console.log("İşlenmiş özellikler:", validFeatures);
-      } catch (error) {
-        console.error("Özellikler parse hatası:", error);
-        validFeatures = [];
-      }
-    }
-
-    // Form verilerini ayarla
     setSelectedProduct(product);
     
-    // Hataları önlemek için objeyi ayrıştırıp ayarla
-    const updatedFormData: FormDataType = {
+    // Tip dönüşümlerini burada yapalım
+    let validAdditionalImages: string[] = [];
+    
+    if (product.additional_images) {
+      if (Array.isArray(product.additional_images)) {
+        validAdditionalImages = product.additional_images.filter(img => typeof img === 'string') as string[];
+      } else if (typeof product.additional_images === 'string') {
+        try {
+          const parsed = JSON.parse(product.additional_images);
+          if (Array.isArray(parsed)) {
+            validAdditionalImages = parsed.filter(img => typeof img === 'string');
+          }
+        } catch (e) {
+          console.error("additional_images parse hatası:", e);
+        }
+      }
+    }
+    
+    // Features için tip dönüşümü
+    let validFeatures: number[] = [];
+    
+    if (product.features) {
+      if (Array.isArray(product.features)) {
+        validFeatures = product.features.map(f => {
+          if (typeof f === 'number') return f;
+          if (typeof f === 'string' && !isNaN(Number(f))) return Number(f);
+          return 0; // Geçersiz değerler için
+        }).filter(f => f > 0);
+      } else if (typeof product.features === 'string') {
+        try {
+          const parsed = JSON.parse(product.features);
+          if (Array.isArray(parsed)) {
+            validFeatures = parsed.map(f => {
+              if (typeof f === 'number') return f;
+              if (typeof f === 'string' && !isNaN(Number(f))) return Number(f);
+              return 0;
+            }).filter(f => f > 0);
+          }
+        } catch (e) {
+          console.error("features parse hatası:", e);
+        }
+      }
+    }
+    
+    const formDataToSet: FormDataType = {
       title: product.title || "",
       short_description: product.short_description || "",
+      long_description: product.long_description || "",
       category_id: product.category_id || 0,
       segment: product.segment || "orta",
       main_image: product.main_image || "",
@@ -320,22 +351,7 @@ export default function ProductsAdmin() {
       features: validFeatures
     };
     
-    setFormData(updatedFormData);
-    
-    // Ek resimleri görseller için hazırla
-    setExistingAdditionalImages(validAdditionalImages);
-    setAdditionalImagePreviews(validAdditionalImages.map((img: string) => getImageUrl(img)));
-    
-    // Ana görsel için önizleme ayarla
-    if (product.main_image) {
-      setMainImageFile(null); // Yeni bir dosya seçilmediği anlamına gelir
-      setMainImagePreview(getImageUrl(product.main_image));
-    } else {
-      setMainImageFile(null);
-      setMainImagePreview("");
-    }
-    
-    // Modal'ı göster
+    setFormData(formDataToSet);
     setShowModal(true);
   };
 
@@ -504,6 +520,26 @@ export default function ProductsAdmin() {
       }
     });
 
+  // Özellik seçim/kaldırma işlevi
+  const handleFeatureToggle = (featureId: number) => {
+    setFormData(prev => {
+      // Eğer özellik zaten seçiliyse, kaldır
+      if (prev.features.includes(featureId)) {
+        return {
+          ...prev,
+          features: prev.features.filter(id => id !== featureId)
+        };
+      }
+      // Değilse ekle
+      else {
+        return {
+          ...prev,
+          features: [...prev.features, featureId]
+        };
+      }
+    });
+  };
+
   return (
     <div className="p-6 bg-gray-50">
       <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm">
@@ -597,7 +633,30 @@ export default function ProductsAdmin() {
               {filteredAndSortedProducts.map((product) => (
                 <tr key={product.id} className="border-t border-gray-200">
                   <td className="py-3 px-4 text-gray-800">{product.id}</td>
-                  <td className="py-3 px-4 text-gray-800 font-medium">{product.title}</td>
+                  <td className="py-3 px-4">
+                    <div>
+                      <div className="text-gray-800 font-medium">{product.title}</div>
+                      
+                      {/* Özellikler */}
+                      {product.features && Array.isArray(product.features) && product.features.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {product.features.slice(0, 3).map((feature, idx) => (
+                            <span
+                              key={idx}
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFeatureColor(typeof feature === 'string' ? feature : String(feature)).bg} ${getFeatureColor(typeof feature === 'string' ? feature : String(feature)).text}`}
+                            >
+                              {feature}
+                            </span>
+                          ))}
+                          {product.features.length > 3 && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                              +{product.features.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </td>
                   <td className="py-3 px-4 text-gray-600">
                     {getCategoryName(product.category_id)}
                   </td>
@@ -677,15 +736,28 @@ export default function ProductsAdmin() {
               {/* Kısa Açıklama */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ürün Açıklaması
+                  Kısa Açıklama
                 </label>
                 <textarea
                   value={formData.short_description}
                   onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
                   rows={3}
                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
-                  />
-                </div>
+                />
+              </div>
+
+              {/* Uzun Açıklama */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Detaylı Açıklama
+                </label>
+                <textarea
+                  value={formData.long_description}
+                  onChange={(e) => setFormData({ ...formData, long_description: e.target.value })}
+                  rows={6}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
+                />
+              </div>
 
               {/* Kategori */}
                 <div>
@@ -862,45 +934,49 @@ export default function ProductsAdmin() {
                 </div>
 
               {/* Özellikler */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Özellikler
+              <div className="mb-4">
+                <label className="block text-sm font-semibold mb-2">
+                  Ürün Özellikleri
                 </label>
-                  <div className="space-y-2">
-                    {formData.features.map((feature, index) => (
-                    <div key={index} className="flex items-center">
+                
+                {loadingFeatures ? (
+                  <div className="text-gray-500 text-sm">Özellikler yükleniyor...</div>
+                ) : availableFeatures.length === 0 ? (
+                  <div className="text-gray-500 text-sm">
+                    Henüz hiç özellik eklenmemiş. 
+                    <Link href="/admin/ozellikler" className="text-blue-500 hover:underline ml-1">
+                      Özellik eklemek için tıklayın
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 bg-white p-3 border rounded-md max-h-60 overflow-y-auto">
+                    {availableFeatures.map(feature => (
+                      <div key={feature.id} className="flex items-center">
                         <input
-                          type="text"
-                          value={feature}
-                          onChange={(e) => {
-                          const updatedFeatures = [...formData.features];
-                          updatedFeatures[index] = e.target.value;
-                          setFormData({ ...formData, features: updatedFeatures });
-                        }}
-                        className="flex-grow p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-800"
-                        placeholder="Örn: Su geçirmez"
+                          type="checkbox"
+                          id={`feature-${feature.id}`}
+                          checked={formData.features.includes(feature.id)}
+                          onChange={() => handleFeatureToggle(feature.id)}
+                          className="mr-2 h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                         />
-                        <button
-                          type="button"
-                          onClick={() => {
-                          const updatedFeatures = [...formData.features];
-                          updatedFeatures.splice(index, 1);
-                          setFormData({ ...formData, features: updatedFeatures });
-                        }}
-                        className="ml-2 p-2 text-red-600 hover:text-red-800"
-                      >
-                        ✕
-                        </button>
+                        <label 
+                          htmlFor={`feature-${feature.id}`}
+                          className="text-sm cursor-pointer flex items-center"
+                        >
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${getFeatureColor(feature.name).bg} ${getFeatureColor(feature.name).text}`}
+                          >
+                            {feature.name}
+                          </span>
+                        </label>
                       </div>
                     ))}
-                    <button
-                      type="button"
-                    onClick={() => setFormData({ ...formData, features: [...formData.features, ''] })}
-                    className="py-1 px-3 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    + Özellik Ekle
-                    </button>
-                </div>
+                  </div>
+                )}
+                
+                <p className="text-gray-500 text-xs mt-1">
+                  Ürün için geçerli olan özellikleri seçin.
+                </p>
               </div>
 
               {/* Hata Mesajı */}
