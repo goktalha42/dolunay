@@ -1,15 +1,74 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaPlus, FaEdit, FaTrash, FaSave, FaTimes } from "react-icons/fa";
+import { 
+  FaPlus, 
+  FaEdit, 
+  FaTrash, 
+  FaSave, 
+  FaTimes, 
+  FaTags, 
+  FaBluetoothB, 
+  FaBatteryFull, 
+  FaWater, 
+  FaWifi, 
+  FaMicrophone, 
+  FaVolumeUp, 
+  FaCog, 
+  FaHeadphones, 
+  FaSun, 
+  FaMoon,
+  FaShieldAlt,
+  FaBullhorn,
+  FaExclamation,
+  FaBell,
+  FaMobileAlt,
+  FaSyncAlt,
+  FaPowerOff,
+  FaHeart,
+  FaCheck,
+  FaCheckCircle
+} from "react-icons/fa";
+import { ReactNode } from "react";
 import { getFeatureColor } from "@/app/lib/utils/coloring";
 
 interface Feature {
   id: number;
   name: string;
+  icon: string;
   display_order: number;
   created_at?: string;
 }
+
+// Kullanılabilir ikonların bir listesi
+const availableIcons: Record<string, ReactNode> = {
+  'FaTags': <FaTags />,
+  'FaBluetoothB': <FaBluetoothB />,
+  'FaBatteryFull': <FaBatteryFull />,
+  'FaWater': <FaWater />,
+  'FaWifi': <FaWifi />,
+  'FaMicrophone': <FaMicrophone />,
+  'FaVolumeUp': <FaVolumeUp />,
+  'FaCog': <FaCog />,
+  'FaHeadphones': <FaHeadphones />,
+  'FaSun': <FaSun />,
+  'FaMoon': <FaMoon />,
+  'FaShieldAlt': <FaShieldAlt />,
+  'FaBullhorn': <FaBullhorn />,
+  'FaExclamation': <FaExclamation />,
+  'FaBell': <FaBell />,
+  'FaMobileAlt': <FaMobileAlt />,
+  'FaSyncAlt': <FaSyncAlt />,
+  'FaPowerOff': <FaPowerOff />,
+  'FaHeart': <FaHeart />,
+  'FaCheck': <FaCheck />,
+  'FaCheckCircle': <FaCheckCircle />
+};
+
+// İkon adından React ikonu oluşturan yardımcı fonksiyon
+const getIconComponent = (iconName: string) => {
+  return availableIcons[iconName as keyof typeof availableIcons] || <FaTags />;
+};
 
 export default function FeaturesPage() {
   const [features, setFeatures] = useState<Feature[]>([]);
@@ -21,30 +80,37 @@ export default function FeaturesPage() {
   
   const [formData, setFormData] = useState({
     name: "",
+    icon: "FaTags",
     display_order: 0
   });
 
   // Form önizleme
   const [previewName, setPreviewName] = useState("");
   
+  // Ad değiştiğinde önizlemeyi güncelle
+  useEffect(() => {
+    setPreviewName(formData.name);
+  }, [formData.name]);
+
   // Özellikleri getir
   const fetchFeatures = async () => {
-    setLoading(true);
     try {
-      const response = await fetch("/api/features");
-      if (!response.ok) {
-        throw new Error("Özellikler getirilirken bir hata oluştu.");
+      setLoading(true);
+      const response = await fetch('/api/features');
+      if (response.ok) {
+        const features = await response.json();
+        setFeatures(features);
+      } else {
+        throw new Error('Özellikler getirilirken bir hata oluştu.');
       }
-      const data = await response.json();
-      setFeatures(data);
     } catch (error) {
-      console.error("Veri getirme hatası:", error);
-      setError("Özellikler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyip tekrar deneyin.");
+      console.error('Veri getirme hatası:', error);
+      setError('Özellikler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyip tekrar deneyin.');
     } finally {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchFeatures();
   }, []);
@@ -53,6 +119,7 @@ export default function FeaturesPage() {
   const resetForm = () => {
     setFormData({
       name: "",
+      icon: "FaTags",
       display_order: 0
     });
     setCurrentFeature(null);
@@ -63,6 +130,7 @@ export default function FeaturesPage() {
     setCurrentFeature(feature);
     setFormData({
       name: feature.name,
+      icon: feature.icon || "FaTags",
       display_order: feature.display_order
     });
     setModalMode("edit");
@@ -81,7 +149,7 @@ export default function FeaturesPage() {
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      alert("Lütfen bir özellik adı girin.");
+      alert('Lütfen bir özellik adı girin.');
       return;
     }
     
@@ -95,7 +163,7 @@ export default function FeaturesPage() {
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
@@ -112,14 +180,14 @@ export default function FeaturesPage() {
       resetForm();
       
     } catch (error) {
-      console.error("İşlem hatası:", error);
+      console.error('İşlem hatası:', error);
       alert(`Bir hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
     }
   };
   
   // Özellik silme
   const handleDelete = async (id: number) => {
-    if (!confirm("Bu özelliği silmek istediğinize emin misiniz?")) {
+    if (!confirm('Bu özelliği silmek istediğinize emin misiniz? Bu özellik ürünlerle ilişkiliyse, ürünlerden de otomatik olarak kaldırılacaktır.')) {
       return;
     }
     
@@ -129,22 +197,28 @@ export default function FeaturesPage() {
       });
       
       if (!response.ok) {
-        throw new Error("Özellik silinirken bir hata oluştu.");
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Özellik silinirken bir hata oluştu.');
       }
+      
+      const result = await response.json();
+      
+      // Başarılı silme işlemi
+      let successMessage = 'Özellik başarıyla silindi.';
+      if (result.removedRelations) {
+        successMessage += ` ${result.removedRelations}`;
+      }
+      
+      alert(successMessage);
       
       // Verileri yenile
       await fetchFeatures();
       
     } catch (error) {
-      console.error("Silme hatası:", error);
+      console.error('Silme hatası:', error);
       alert(`Silme işlemi sırasında bir hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
     }
   };
-  
-  // Ad değiştiğinde önizlemeyi güncelle
-  useEffect(() => {
-    setPreviewName(formData.name);
-  }, [formData.name]);
   
   if (loading) {
     return (
@@ -197,6 +271,9 @@ export default function FeaturesPage() {
                   ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  İkon
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Özellik Adı
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -213,7 +290,7 @@ export default function FeaturesPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {features.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                     Henüz hiç özellik eklenmemiş. "Yeni Özellik Ekle" butonunu kullanarak özellik ekleyebilirsiniz.
                   </td>
                 </tr>
@@ -222,6 +299,11 @@ export default function FeaturesPage() {
                   <tr key={feature.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {feature.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded-full">
+                        {getIconComponent(feature.icon)}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center">
@@ -305,6 +387,31 @@ export default function FeaturesPage() {
               </div>
               
               <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Özellik İkonu
+                </label>
+                <div className="grid grid-cols-5 gap-2 p-3 border rounded-md max-h-60 overflow-y-auto">
+                  {Object.entries(availableIcons).map(([iconName, IconComponent]) => (
+                    <div 
+                      key={iconName}
+                      onClick={() => setFormData({...formData, icon: iconName})}
+                      className={`
+                        flex flex-col items-center justify-center p-2 rounded-md cursor-pointer
+                        ${formData.icon === iconName ? 'bg-blue-100 border border-blue-300' : 'hover:bg-gray-100'}
+                      `}
+                    >
+                      <div className="text-gray-700 text-lg">
+                        {IconComponent}
+                      </div>
+                      <span className="text-xs text-gray-500 mt-1 text-center truncate w-full">
+                        {iconName.replace('Fa', '')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="mb-4">
                 <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="display_order">
                   Gösterim Sırası
                 </label>
@@ -316,6 +423,9 @@ export default function FeaturesPage() {
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   min="0"
                 />
+                <p className="text-gray-500 text-xs mt-1">
+                  Düşük numaralar daha önce gösterilir. Özellikler bu sıraya göre gösterilecektir.
+                </p>
               </div>
               
               <div className="flex justify-end">

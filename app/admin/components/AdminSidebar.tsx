@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -20,17 +20,35 @@ import {
   FaQuestionCircle,
   FaCog,
   FaSignOutAlt,
-  FaList
+  FaList,
+  FaAngleDown,
+  FaAngleRight,
+  FaTags
 } from "react-icons/fa";
 
 export default function AdminSidebar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
   const pathname = usePathname();
   
   // Session için gerekirse burada auth işlemleri eklenebilir
   const handleLogout = () => {
     // Logout işlemi burada gerçekleştirilebilir
     console.log("Logout clicked");
+  };
+
+  // Menüyü genişlet/daralt fonksiyonu
+  const toggleSubmenu = (menuId: string) => {
+    setExpandedMenus(prev => 
+      prev.includes(menuId) 
+        ? prev.filter(id => id !== menuId) // Zaten genişletilmişse, kaldır
+        : [...prev, menuId] // Değilse ekle
+    );
+  };
+
+  // İlgili alt menü açık mı kontrol et
+  const isSubmenuExpanded = (menuId: string) => {
+    return expandedMenus.includes(menuId);
   };
 
   // Admin sidebar öğeleri
@@ -41,19 +59,24 @@ export default function AdminSidebar() {
       icon: <FaTachometerAlt className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
     },
     { 
-      path: "/admin/kategoriler", 
-      label: "Kategoriler", 
-      icon: <FaList className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-    },
-    { 
-      path: "/admin/ozellikler", 
-      label: "Özellikler", 
-      icon: <FaList className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
-    },
-    { 
-      path: "/admin/urunler", 
+      id: "urunler",
       label: "Ürünler", 
-      icon: <FaBoxOpen className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />
+      icon: <FaBoxOpen className={`${isSidebarOpen ? "mr-2" : ""} text-[14px]`} />,
+      hasSubmenu: true,
+      submenuItems: [
+        { 
+          path: "/admin/urunler", 
+          label: "Tüm Ürünler" 
+        },
+        { 
+          path: "/admin/kategoriler", 
+          label: "Kategoriler" 
+        },
+        { 
+          path: "/admin/ozellikler", 
+          label: "Özellikler" 
+        }
+      ]
     },
     { 
       path: "/admin/blog", 
@@ -111,6 +134,26 @@ export default function AdminSidebar() {
     }
   ];
 
+  // Sayfa yüklendiğinde, eğer alt menu sayfalarından birine geldiyse, ait olduğu menüyü otomatik genişlet
+  useEffect(() => {
+    if (pathname) {
+      // Her bir ana menüyü kontrol et
+      sidebarItems.forEach(item => {
+        if (item.hasSubmenu && item.submenuItems) {
+          // Alt menü sayfalarından birine gelindi mi?
+          const inSubmenu = item.submenuItems.some(subItem => 
+            pathname === subItem.path || pathname.startsWith(subItem.path + '/')
+          );
+          
+          // Eğer alt menü sayfalarından birindeyse ve menü henüz genişletilmemişse genişlet
+          if (inSubmenu && !isSubmenuExpanded(item.id)) {
+            setExpandedMenus(prev => [...prev, item.id]);
+          }
+        }
+      });
+    }
+  }, [pathname]);
+
   return (
     <>
       {/* Sidebar */}
@@ -165,18 +208,57 @@ export default function AdminSidebar() {
           <nav className="flex-1 py-2 overflow-y-auto">
             <ul className="space-y-0.5 px-2">
               {sidebarItems.map((item) => (
-                <li key={item.path}>
-                  <Link 
-                    href={item.path} 
-                    className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
-                      pathname === item.path 
-                        ? "bg-blue-50 text-blue-600" 
-                        : "text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    {item.icon}
-                    {isSidebarOpen && <span className="font-medium">{item.label}</span>}
-                  </Link>
+                <li key={item.path || item.id}>
+                  {item.hasSubmenu ? (
+                    <>
+                      <button
+                        onClick={() => toggleSubmenu(item.id)}
+                        className={`flex items-center justify-between w-full ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors text-gray-600 hover:bg-gray-50 ${
+                          pathname && pathname.startsWith(`/admin/${item.id}`) ? "bg-blue-50 text-blue-600" : ""
+                        }`}
+                      >
+                        <div className="flex items-center">
+                          {item.icon}
+                          {isSidebarOpen && <span className="font-medium">{item.label}</span>}
+                        </div>
+                        {isSidebarOpen && (
+                          isSubmenuExpanded(item.id) ? <FaAngleDown size={12} /> : <FaAngleRight size={12} />
+                        )}
+                      </button>
+                      
+                      {/* Alt Menü */}
+                      {isSidebarOpen && isSubmenuExpanded(item.id) && (
+                        <ul className="ml-6 mt-1 space-y-1">
+                          {item.submenuItems?.map((subItem) => (
+                            <li key={subItem.path}>
+                              <Link 
+                                href={subItem.path} 
+                                className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
+                                  pathname === subItem.path 
+                                    ? "bg-blue-50 text-blue-600" 
+                                    : "text-gray-600 hover:bg-gray-50"
+                                }`}
+                              >
+                                <span className="font-medium">{subItem.label}</span>
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  ) : (
+                    <Link 
+                      href={item.path} 
+                      className={`flex items-center ${isSidebarOpen ? 'px-3' : 'justify-center'} py-2 rounded-md text-sm transition-colors ${
+                        pathname === item.path 
+                          ? "bg-blue-50 text-blue-600" 
+                          : "text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {item.icon}
+                      {isSidebarOpen && <span className="font-medium">{item.label}</span>}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

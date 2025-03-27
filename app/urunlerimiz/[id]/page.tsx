@@ -2,8 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { FaArrowLeft, FaCheckCircle, FaInfoCircle, FaShoppingCart, FaTruck, FaPhoneAlt, FaExchangeAlt, FaQuestionCircle, FaRegListAlt, FaTags, FaHeadphones } from "react-icons/fa";
+import { FaArrowLeft, FaCheckCircle, FaInfoCircle, FaShoppingCart, FaTruck, FaPhoneAlt, FaExchangeAlt, FaQuestionCircle, FaRegListAlt, FaTags, FaHeadphones, FaBluetoothB, FaBatteryFull, FaWater, FaWifi, FaMicrophone, FaVolumeUp, FaCheck, FaCog, FaSun, FaMoon, FaShieldAlt, FaBullhorn, FaExclamation, FaBell, FaMobileAlt, FaSyncAlt, FaPowerOff, FaHeart } from "react-icons/fa";
 import Link from "next/link";
+
+interface Feature {
+  id: number;
+  name: string;
+  icon: string;
+  display_order: number;
+}
 
 interface Product {
   id: number;
@@ -14,7 +21,9 @@ interface Product {
   segment: string;
   main_image: string;
   additional_images?: string[] | string;
-  features?: string[] | string;
+  features?: Feature[] | string[];
+  feature_ids?: number[];
+  feature_names?: string[];
   [key: string]: any;
 }
 
@@ -389,11 +398,7 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                         {product.long_description}
                       </div>
                     </div>
-                  ) : (
-                    <p className="text-gray-600 leading-relaxed">
-                      Detaylı ürün açıklaması bulunmamaktadır.
-                    </p>
-                  )}
+                  ) : null}
                   
                   <div className="mt-6 bg-blue-50 rounded-lg p-4">
                     <h4 className="font-medium text-blue-800 mb-2 flex items-center">
@@ -411,29 +416,55 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                   <ul className="space-y-3">
                     {product.features && Array.isArray(product.features) ? 
                       product.features.map((feature, index) => {
-                        if (!feature || typeof feature !== 'string') {
-                          return null;
+                        // String özellikleri (eski format) için
+                        if (typeof feature === 'string') {
+                          return (
+                            <li key={index} className="flex items-start">
+                              <FaCheckCircle className="text-green-500 mt-1 mr-3 flex-shrink-0" />
+                              <span className="text-gray-700">{feature}</span>
+                            </li>
+                          );
                         }
                         
-                        // Özellik ikonlarını belirleme
-                        const featureIcon = () => {
-                          if (feature.toLowerCase().includes('bluetooth')) {
-                            return <span className="bg-blue-100 p-2 rounded-full text-blue-600 mr-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M11 12.3l1.3-1.3 1.5 1.5L10 16V8.8l3.8 3.8-1.5 1.5-1.3-1.3zM10 4l3.8 3.8-1.5 1.5L11 8l1.3-1.3 1.5 1.5L10 12V4z"/></svg></span>;
-                          } else if (feature.toLowerCase().includes('gürültü')) {
-                            return <span className="bg-green-100 p-2 rounded-full text-green-600 mr-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clipRule="evenodd" /></svg></span>;
-                          } else if (feature.toLowerCase().includes('şarj')) {
-                            return <span className="bg-yellow-100 p-2 rounded-full text-yellow-600 mr-3"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13 7h-2v2h2V7zm0 4h-2v2h2v-2zm2-8H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h10v14zm-8-2h2v-2H7v2z"/></svg></span>;
-                          } else {
-                            return <FaCheckCircle className="text-green-500 mt-1 mr-3 flex-shrink-0" />;
-                          }
-                        };
+                        // Nesne özellikleri (yeni format) için
+                        if (feature && typeof feature === 'object' && 'name' in feature) {
+                          const iconName = feature.icon || 'FaTags';
+                          const getIconComponent = (iconName: string) => {
+                            switch(iconName) {
+                              case 'FaBluetoothB': return <FaBluetoothB className="text-blue-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaBatteryFull': return <FaBatteryFull className="text-green-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaWater': return <FaWater className="text-blue-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaWifi': return <FaWifi className="text-blue-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaMicrophone': return <FaMicrophone className="text-gray-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaVolumeUp': return <FaVolumeUp className="text-gray-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaHeadphones': return <FaHeadphones className="text-purple-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaCheck': return <FaCheck className="text-green-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaCheckCircle': return <FaCheckCircle className="text-green-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaCog': return <FaCog className="text-gray-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaSun': return <FaSun className="text-yellow-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaMoon': return <FaMoon className="text-blue-800 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaShieldAlt': return <FaShieldAlt className="text-green-600 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaBullhorn': return <FaBullhorn className="text-red-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaExclamation': return <FaExclamation className="text-yellow-600 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaBell': return <FaBell className="text-blue-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaMobileAlt': return <FaMobileAlt className="text-gray-600 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaSyncAlt': return <FaSyncAlt className="text-blue-600 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaPowerOff': return <FaPowerOff className="text-red-600 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaHeart': return <FaHeart className="text-red-500 mt-1 mr-3 flex-shrink-0" />;
+                              case 'FaTags': 
+                              default: return <FaTags className="text-blue-500 mt-1 mr-3 flex-shrink-0" />;
+                            }
+                          };
+                          
+                          return (
+                            <li key={index} className="flex items-start">
+                              {getIconComponent(iconName)}
+                              <span className="text-gray-700">{feature.name}</span>
+                            </li>
+                          );
+                        }
                         
-                        return (
-                          <li key={index} className="flex items-start">
-                            {featureIcon()}
-                            <span className="text-gray-700">{feature}</span>
-                          </li>
-                        );
+                        return null;
                       }) : 
                       <li className="text-gray-500">Bu ürün için özellik bilgisi bulunmamaktadır.</li>
                     }
@@ -651,16 +682,16 @@ export default function ProductDetail({ params }: { params: { id: string } }) {
                 </tr>
                 
                 {/* Özellikler için dinamik satırlar */}
-                {product.features && Array.isArray(product.features) && product.features.map((feature, index) => (
+                {product.feature_names && Array.isArray(product.feature_names) && product.feature_names.map((featureName, index) => (
                   <tr key={index} className="border-b border-gray-100">
-                    <td className="py-3 text-gray-500 font-medium">{feature}</td>
+                    <td className="py-3 text-gray-500 font-medium">{featureName}</td>
                     <td className="py-3 text-gray-800">
                       <span className="text-green-500">✓</span>
                     </td>
                     {compareProducts.map((p) => (
                       <td key={p.id} className="py-3 text-gray-800">
-                        {p.features && Array.isArray(p.features) && 
-                         p.features.includes(feature) ? 
+                        {p.feature_names && Array.isArray(p.feature_names) && 
+                         p.feature_names.includes(featureName) ? 
                           <span className="text-green-500">✓</span> : 
                           <span className="text-red-500">✗</span>}
                       </td>

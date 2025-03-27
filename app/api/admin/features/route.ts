@@ -16,13 +16,17 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const { name, display_order } = data;
+    const { name, icon, display_order } = data;
     
     if (!name || !name.trim()) {
       return NextResponse.json({ error: "Özellik adı boş olamaz" }, { status: 400 });
     }
     
-    const feature = await addFeature(name.trim(), display_order || 0);
+    const feature = await addFeature({
+      name: name.trim(),
+      icon: icon || 'FaTags',
+      display_order: display_order || 0
+    });
     
     if (!feature) {
       return NextResponse.json({ error: "Özellik eklenemedi" }, { status: 500 });

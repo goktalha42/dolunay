@@ -38,13 +38,14 @@ export async function POST(request: NextRequest) {
     
     const db = await getDatabase();
     
-    // Özelliği ekle
+    // Özelliği ekle - icon alanı eklendi
     const [result] = await db.query(`
-      INSERT INTO features (name, display_order)
-      VALUES (?, ?)
+      INSERT INTO features (name, display_order, icon)
+      VALUES (?, ?, ?)
     `, [
       body.name.trim(),
-      body.display_order || 0
+      body.display_order || 0,
+      body.icon || 'FaTags'
     ]);
     
     const insertResult = result as any;

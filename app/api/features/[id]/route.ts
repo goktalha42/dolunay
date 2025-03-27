@@ -84,14 +84,15 @@ export async function PUT(
       );
     }
     
-    // Özelliği güncelle
+    // Özelliği güncelle - icon alanı eklendi
     await db.query(`
       UPDATE features
-      SET name = ?, display_order = ?
+      SET name = ?, display_order = ?, icon = ?
       WHERE id = ?
     `, [
       body.name.trim(),
       body.display_order !== undefined ? body.display_order : featureRows[0].display_order,
+      body.icon || featureRows[0].icon || 'FaTags',
       id
     ]);
     
@@ -151,22 +152,36 @@ export async function DELETE(
     
     const relationsCount = (relations as any[])[0]?.count || 0;
     
-    if (relationsCount > 0) {
-      return NextResponse.json(
-        { 
-          error: 'Bu özellik ürünlerle ilişkilidir ve silinemez. Önce ilişkili ürünlerden bu özelliği kaldırın.',
-          relations: relationsCount
-        },
-        { status: 409 }
-      );
+    // Transaction başlat
+    await db.query('START TRANSACTION');
+    
+    try {
+      // Eğer ilişkili ürünler varsa, önce product_features tablosundaki ilgili kayıtları sil
+      if (relationsCount > 0) {
+        await db.query(`
+          DELETE FROM product_features WHERE feature_id = ?
+        `, [id]);
+      }
+      
+      // Ardından özelliğin kendisini sil
+      await db.query(`
+        DELETE FROM features WHERE id = ?
+      `, [id]);
+      
+      // Transaction'ı doğrula
+      await db.query('COMMIT');
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Özellik başarıyla silindi', 
+        removedRelations: relationsCount > 0 ? `${relationsCount} ürünle olan ilişki de kaldırıldı.` : undefined 
+      });
+      
+    } catch (error) {
+      // Hata durumunda geri al
+      await db.query('ROLLBACK');
+      throw error;
     }
-    
-    // Özelliği sil
-    await db.query(`
-      DELETE FROM features WHERE id = ?
-    `, [id]);
-    
-    return NextResponse.json({ success: true, message: 'Özellik başarıyla silindi' });
     
   } catch (error) {
     console.error(`API Error: Özellik (ID: ${params.id}) silinirken hata:`, error);

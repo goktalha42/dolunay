@@ -12,13 +12,17 @@ export async function PUT(request: Request, context: { params: { id: string } })
     }
     
     const data = await request.json();
-    const { name, display_order } = data;
+    const { name, icon, display_order } = data;
     
     if (!name || !name.trim()) {
       return NextResponse.json({ error: "Özellik adı boş olamaz" }, { status: 400 });
     }
     
-    const feature = await updateFeature(id, name.trim(), display_order);
+    const feature = await updateFeature(id, {
+      name: name.trim(),
+      icon: icon || 'FaTags', 
+      display_order: display_order || 0
+    });
     
     if (!feature) {
       return NextResponse.json({ error: "Özellik bulunamadı veya güncellenemedi" }, { status: 404 });

@@ -24,6 +24,7 @@ export interface ProductImage {
 export interface Feature {
   id: number;
   name: string;
+  icon: string; // Özellik ikonu için yeni alan
   display_order: number;
   created_at?: string;
 }
@@ -86,6 +87,7 @@ export async function setupDatabase() {
     CREATE TABLE IF NOT EXISTS features (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
+      icon VARCHAR(100) DEFAULT 'FaTags', /* Varsayılan ikon */
       display_order INT DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
@@ -160,9 +162,9 @@ export async function getProductById(id: number): Promise<Product | null> {
     
     (product as any).additional_images = additionalImages;
     
-    // Özellikleri getir - artık features tablosundan
+    // Özellikleri getir - icon dahil
     const [features] = await db.query(`
-      SELECT f.id, f.name, pf.display_order 
+      SELECT f.id, f.name, f.icon, pf.display_order 
       FROM features f
       JOIN product_features pf ON f.id = pf.feature_id
       WHERE pf.product_id = ? 
@@ -171,9 +173,12 @@ export async function getProductById(id: number): Promise<Product | null> {
     
     const featureRows = features as Feature[];
     
-    // Hem ID'leri hem de özellik adlarını dizi olarak ekle (geriye uyumluluk için)
+    // Hem ID'leri hem de özellik nesnelerini dizi olarak ekle
     (product as any).feature_ids = featureRows.map(f => f.id);
-    (product as any).features = featureRows.map(f => f.name);
+    // Geriye uyumluluk için string dizisi
+    (product as any).feature_names = featureRows.map(f => f.name);
+    // Yeni format: Feature nesnelerini içeren dizi
+    (product as any).features = featureRows;
     
     return product;
   } catch (error) {
@@ -215,9 +220,9 @@ export async function getProducts(): Promise<Product[]> {
       
       (product as any).additional_images = additionalImages;
       
-      // Özellikleri getir - artık features tablosundan
+      // Özellikleri getir - icon dahil
       const [features] = await db.query(`
-        SELECT f.id, f.name, pf.display_order 
+        SELECT f.id, f.name, f.icon, pf.display_order 
         FROM features f
         JOIN product_features pf ON f.id = pf.feature_id
         WHERE pf.product_id = ? 
@@ -226,14 +231,17 @@ export async function getProducts(): Promise<Product[]> {
       
       const featureRows = features as Feature[];
       
-      // Hem ID'leri hem de özellik adlarını dizi olarak ekle (geriye uyumluluk için)
+      // Hem ID'leri hem de özellik nesnelerini dizi olarak ekle
       (product as any).feature_ids = featureRows.map(f => f.id);
-      (product as any).features = featureRows.map(f => f.name);
+      // Geriye uyumluluk için string dizisi
+      (product as any).feature_names = featureRows.map(f => f.name);
+      // Yeni format: Feature nesnelerini içeren dizi
+      (product as any).features = featureRows;
     }
     
     return productRows;
   } catch (error) {
-    console.error('Ürünler getirme hatası:', error);
+    console.error('Ürünleri getirme hatası:', error);
     return [];
   }
 }
@@ -727,10 +735,11 @@ export async function addFeature(feature: Omit<Feature, 'id' | 'created_at'>): P
     const db = await getDatabase();
     
     const [result] = await db.query(`
-      INSERT INTO features (name, display_order)
-      VALUES (?, ?)
+      INSERT INTO features (name, icon, display_order)
+      VALUES (?, ?, ?)
     `, [
       feature.name,
+      feature.icon || 'FaTags', // Varsayılan ikon eğer belirtilmemişse
       feature.display_order || 0
     ]);
     
@@ -763,6 +772,11 @@ export async function updateFeature(id: number, feature: Partial<Feature>): Prom
     if (feature.name !== undefined) {
       updateFields.push('name = ?');
       updateValues.push(feature.name);
+    }
+    
+    if (feature.icon !== undefined) {
+      updateFields.push('icon = ?');
+      updateValues.push(feature.icon);
     }
     
     if (feature.display_order !== undefined) {

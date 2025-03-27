@@ -1,3 +1,26 @@
+import { ReactNode } from "react";
+import {
+  FaBluetoothB,
+  FaBatteryFull,
+  FaWater,
+  FaWifi,
+  FaMicrophone,
+  FaVolumeUp,
+  FaCog,
+  FaHeadphones,
+  FaSun,
+  FaMoon,
+  FaShieldAlt,
+  FaBullhorn,
+  FaExclamation,
+  FaBell,
+  FaMobileAlt,
+  FaSyncAlt,
+  FaPowerOff,
+  FaHeart,
+  FaTags
+} from "react-icons/fa";
+
 /**
  * Özellik metinleri için otomatik renk belirleme yardımcısı
  * Özellik adına göre uygun renk ve arka plan rengi seçer
@@ -137,4 +160,71 @@ export function getFeatureColor(featureName: string): ColorData {
 export function getFeatureClassNames(featureName: string): string[] {
   const { bg, text, border } = getFeatureColor(featureName);
   return [bg, text, border];
+}
+
+/**
+ * İkon adını string olarak alıp döndüren yardımcı fonksiyon
+ * Geçerli ikon değilse varsayılan değer döndürür
+ */
+export function getIconByName(iconName: string): string {
+  const validIcons = [
+    'FaTags',
+    'FaBluetoothB',
+    'FaBatteryFull',
+    'FaWater',
+    'FaWifi',
+    'FaMicrophone',
+    'FaVolumeUp',
+    'FaCog',
+    'FaHeadphones',
+    'FaSun',
+    'FaMoon',
+    'FaShieldAlt',
+    'FaBullhorn',
+    'FaExclamation',
+    'FaBell',
+    'FaMobileAlt',
+    'FaSyncAlt',
+    'FaPowerOff',
+    'FaHeart'
+  ];
+  
+  return validIcons.includes(iconName) ? iconName : 'FaTags';
+}
+
+// Kullanılabilir tüm icon isimlerini al
+export function getAvailableIconNames(): string[] {
+  return [
+    'FaTags',
+    'FaBluetoothB',
+    'FaBatteryFull',
+    'FaWater',
+    'FaWifi',
+    'FaMicrophone',
+    'FaVolumeUp',
+    'FaCog',
+    'FaHeadphones',
+    'FaSun',
+    'FaMoon',
+    'FaShieldAlt',
+    'FaBullhorn',
+    'FaExclamation',
+    'FaBell',
+    'FaMobileAlt',
+    'FaSyncAlt',
+    'FaPowerOff',
+    'FaHeart'
+  ];
+}
+
+// Kullanılabilir tüm ikonları isim-bileşen eşleşmesi olarak al
+export function getAvailableIcons(): Record<string, string> {
+  const iconNames = getAvailableIconNames();
+  const icons: Record<string, string> = {};
+  
+  iconNames.forEach(name => {
+    icons[name] = name;
+  });
+  
+  return icons;
 } 

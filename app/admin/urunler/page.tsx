@@ -41,7 +41,7 @@ interface FormDataType {
   segment: string;
   main_image: string;
   additional_images: string[];
-  features: number[]; // Özellik ID'lerini tutan dizi
+  features: any[]; // Özellik ID'lerini veya string'leri tutan dizi
   [key: string]: any; // Diğer olası alanlar için
 }
 
@@ -165,9 +165,9 @@ export default function ProductsAdmin() {
       if (key === "features") {
         // Features dizisinin doğru şekilde gönderildiğinden emin ol
         if (Array.isArray(value)) {
-        formDataToSend.append(key, JSON.stringify(value));
+          formDataToSend.append(key, JSON.stringify(value));
           console.log("Features formData'ya eklendi:", JSON.stringify(value));
-      } else {
+        } else {
           formDataToSend.append(key, JSON.stringify([]));
           console.error("Features dizi değil:", value);
         }
@@ -296,62 +296,31 @@ export default function ProductsAdmin() {
   const handleProductEdit = (product: Product) => {
     setSelectedProduct(product);
     
-    // Tip dönüşümlerini burada yapalım
-    let validAdditionalImages: string[] = [];
-    
-    if (product.additional_images) {
-      if (Array.isArray(product.additional_images)) {
-        validAdditionalImages = product.additional_images.filter(img => typeof img === 'string') as string[];
-      } else if (typeof product.additional_images === 'string') {
-        try {
-          const parsed = JSON.parse(product.additional_images);
-          if (Array.isArray(parsed)) {
-            validAdditionalImages = parsed.filter(img => typeof img === 'string');
-          }
-        } catch (e) {
-          console.error("additional_images parse hatası:", e);
-        }
-      }
-    }
-    
-    // Features için tip dönüşümü
-    let validFeatures: number[] = [];
-    
-    if (product.features) {
-      if (Array.isArray(product.features)) {
-        validFeatures = product.features.map(f => {
-          if (typeof f === 'number') return f;
-          if (typeof f === 'string' && !isNaN(Number(f))) return Number(f);
-          return 0; // Geçersiz değerler için
-        }).filter(f => f > 0);
-      } else if (typeof product.features === 'string') {
-        try {
-          const parsed = JSON.parse(product.features);
-          if (Array.isArray(parsed)) {
-            validFeatures = parsed.map(f => {
-              if (typeof f === 'number') return f;
-              if (typeof f === 'string' && !isNaN(Number(f))) return Number(f);
-              return 0;
-            }).filter(f => f > 0);
-          }
-        } catch (e) {
-          console.error("features parse hatası:", e);
-        }
-      }
-    }
-    
-    const formDataToSet: FormDataType = {
+    // Önceki form datayı temizle ve güncel veriyi ayarla
+    setFormData({
       title: product.title || "",
       short_description: product.short_description || "",
       long_description: product.long_description || "",
       category_id: product.category_id || 0,
       segment: product.segment || "orta",
       main_image: product.main_image || "",
-      additional_images: validAdditionalImages,
-      features: validFeatures
-    };
-    
-    setFormData(formDataToSet);
+      additional_images: [],
+      features: product.feature_ids || [] // feature_ids kullan
+    });
+
+    // Ana görsel için önizleme ayarla
+    if (product.main_image) {
+      setMainImagePreview(getImageUrl(product.main_image));
+    }
+
+    // Ek görseller için
+    if (product.additional_images && Array.isArray(product.additional_images)) {
+      setExistingAdditionalImages(
+        product.additional_images.filter(img => typeof img === 'string') as string[]
+      );
+    }
+
+    // Modal'ı aç
     setShowModal(true);
   };
 
@@ -640,14 +609,23 @@ export default function ProductsAdmin() {
                       {/* Özellikler */}
                       {product.features && Array.isArray(product.features) && product.features.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {product.features.slice(0, 3).map((feature, idx) => (
-                            <span
-                              key={idx}
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFeatureColor(typeof feature === 'string' ? feature : String(feature)).bg} ${getFeatureColor(typeof feature === 'string' ? feature : String(feature)).text}`}
-                            >
-                              {feature}
-                            </span>
-                          ))}
+                          {product.features.slice(0, 3).map((feature, idx) => {
+                            // Özellik bir nesne mi kontrol et
+                            const featureName = typeof feature === 'object' && feature !== null 
+                              ? (feature as any).name  // Nesne ise name özelliğini kullan (any tipine dönüştür)
+                              : typeof feature === 'string' 
+                                ? feature   // String ise doğrudan kullan
+                                : String(feature);  // Diğer durumlarda stringe dönüştür
+                            
+                            return (
+                              <span
+                                key={idx}
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFeatureColor(featureName).bg} ${getFeatureColor(featureName).text}`}
+                              >
+                                {featureName}
+                              </span>
+                            );
+                          })}
                           {product.features.length > 3 && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                               +{product.features.length - 3}
